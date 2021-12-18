@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% load static %}
+{%block content%}
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+    .bos {
+        border:3px solid black;
+        }
+ div {
+            padding: 1px 0;
+         }
+</style>
+</head>
+<body>
+    <div class="bos">
+    <!-- BREADCRUMB -->
+    <div id="breadcrumb" class="section">
+        <!-- container -->
+        <div class="container">
+            <!-- row -->
+            <div class="row">
+                <div class="col-md-12">
+                    <ul class="breadcrumb-tree">
+                        <li><a href="/">Home</a></li>
+                        <li><a href="#">{{product.category}}</a></li>
+                        <li class="active">{{product.name}}</li>
+                    </ul>
+                </div>
+            </div>
+            <!-- /row -->
+        </div>
+        <!-- /container -->
+    </div>
+    <!-- /BREADCRUMB -->
+
+    <!-- SECTION -->
+    <div class="section">
+        <!-- container -->
+        <div class="container">
+            <!-- row -->
+            <div class="row">
+                <!-- Product main img -->
+                <div class="col-md-6">
+                    <div id="product-main-img">
+                        <div class="product-preview">
+                            <img src={{product.image.url}} alt="" style="height:350px; width:300px;">
+                        </div>
+                    </div>
+                </div>
+                <!-- /Product main img -->
+
+                <!-- Product details -->
+                <div class="col-md-6">
+                    <div class="product-details">
+                        <h2 class="product-name">{{product.name}}</h2>
+                        <div>
+                            <h3 class="product-price">Rs:{{product.price}}</h3>
+                            <span class="product-available">In Stock</span>
+                        </div>
+                        <p>{{product.description}}.</p>
+
+                        <div class="product-options">
+                            <label>
+                                Size
+                                <select class="input-select">
+                                    <option value="0">X</option>
+                                </select>
+                            </label>
+                            <label>
+                                Color
+                                <select class="input-select">
+                                    <option value="0"><b>{{product.color}}</b></option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <div class="add-to-cart">
+                            <div class="qty-label">
+                                Qty
+                                <div class="input-number">
+                                    <input type="number">
+                                    <span class="qty-up">+</span>
+                                    <span class="qty-down">-</span>
+                                </div>
+                            </div>
+                            <a href="{%url 'cartAdd' product.id %}"><button class="add-to-cart-btn"><i class="fa fa-shopping-cart"></i> add to cart</button></a>
+                        </div>
+
+                        <ul class="product-links">
+                            <li>Category:</li>
+                            <li><a href="#">{{product.category}}</a></li>
+                        </ul>
+
+                    </div>
+                </div>
+                <!-- /Product details -->
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+{%endblock%}
