@@ -1,325 +1,164 @@
 {% extends 'base.html' %}
 {% load static %}
-{%block content%}
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-    .bos {
-        border:2px solid black;
-        }
- div {
-            padding: 1px 0;
-         }
 
-.container {
-    padding: 50px;
-}
-</style>
-</head>
-<body>
-    <div class="bos">
-        <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet">
-<div class="container padding-bottom-3x mb-1">
-    <!-- Alert-->
-    <!-- Shopping Cart-->
-    <div class="table-responsive shopping-cart">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Product Name</th>
-                    <th class="text-center">Quantity</th>
-                    <th class="text-center">Price</th>
-                    <th class="text-center">Total</th>
-                    <th class="text-center"><a class="btn btn-sm btn-outline-danger" href="{%url 'clear_cart' %}">Clear Cart</a></th>
-                </tr>
-            </thead>
-            <tbody>
-                {%for item in cart_items %}
-                <tr>
-                    <td>
-                        <div class="product-item">
-                            <a class="product-thumb" href="{{item.product.get_url}}"><img src={{item.product.image.url}} alt={{item.product.name}} style="height:130px; width:120px; "></a>
-                            <div class="product-info">
-                                <h4 class="product-title"><a href="{{item.product.get_url}}">{{item.product.name}}</a></h4><span><em>Size:</em> 10.5</span><span><em>Color:</em> {{item.product.color}}</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="text-center">
-                        <div class="count-input">
-                            <select class="form-control">
-                                <option>1</option>
-                                <option>2</option>
-                                <option>3</option>
-                                <option>4</option>
-                                <option>5</option>
-                            </select>
-                        </div>
-                    </td>
-                    <td class="text-center text-lg text-medium">Rs:{{item.product.price}}</td>
-                    <td class="text-center text-lg text-medium">$18.00</td>
-                    <td class="text-center"><a class="remove-from-cart" href="{% url 'cartdel' item.product.id %}" data-toggle="tooltip" title="" data-original-title="Remove item"><i class="fa fa-trash"></i></a></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+{% block title %}Your Cart - ShoppingBuddy{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-8">
+  
+  <div class="flex items-center justify-between border-b border-neutral-200 pb-4">
+    <h1 class="text-2xl font-semibold text-neutral-900">Shopping Cart</h1>
+    {% if cart_items %}
+      <span class="text-neutral-500 font-medium text-sm">
+        {{ count }} item{{ count|pluralize }}
+      </span>
+    {% endif %}
+  </div>
+
+  {% if not cart_items %}
+    <!-- Empty State -->
+    <div class="bg-white rounded-lg border border-neutral-200 p-12 text-center flex flex-col items-center justify-center">
+      <div class="mb-4 text-neutral-400">
+        <i data-lucide="shopping-cart" class="w-10 h-10"></i>
+      </div>
+      <h2 class="text-lg font-semibold text-neutral-900 mb-2">Your cart is empty</h2>
+      <p class="text-neutral-500 max-w-sm mx-auto mb-6 text-sm">
+        You haven't added anything to your cart yet. Discover our premium products and start shopping.
+      </p>
+      <a href="/" class="inline-flex items-center justify-center px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+        Continue Shopping
+      </a>
     </div>
-    <div class="shopping-cart-footer">
-        <div class="column">
-            <form class="coupon-form" method="post">
-                <br>
-                <input class="form-control form-control-sm" type="text" placeholder="Coupon code" required="">
-                <button class="btn btn-outline-primary btn-sm" type="submit">Apply Coupon</button>
-            </form>
+  {% else %}
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
+      
+      <!-- Cart Items (Left Column) -->
+      <div class="lg:col-span-8 flex flex-col gap-4">
+        
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-semibold text-neutral-900">Products</h2>
+          <a href="{% url 'clear_cart' %}" class="text-sm font-medium text-red-600 hover:text-red-700 transition-colors focus:outline-none focus:underline">
+            Clear Cart
+          </a>
         </div>
-        <div class="column text-lg">Subtotal: <span class="text-medium">{{total}}</span></div>
+        
+        <div class="border-t border-neutral-200 divide-y divide-neutral-200">
+          {% for item in cart_items %}
+            <div class="py-6 flex flex-col sm:flex-row gap-6">
+              
+              <!-- Image -->
+              <a href="{{ item.product.get_url }}" class="flex-shrink-0 w-24 h-24 sm:w-28 sm:h-28 bg-white border border-neutral-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 relative block">
+                {% if item.product.image %}
+                  <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="w-full h-full object-contain">
+                {% else %}
+                  <div class="w-full h-full flex items-center justify-center text-neutral-300">
+                    <i data-lucide="image" class="w-6 h-6"></i>
+                  </div>
+                {% endif %}
+              </a>
+              
+              <!-- Details & Controls -->
+              <div class="flex-grow flex flex-col justify-between">
+                <div class="flex justify-between items-start gap-4">
+                  <div>
+                    <a href="{{ item.product.category.get_url }}" class="text-xs font-medium text-neutral-500 hover:text-neutral-900 transition-colors mb-1 inline-block focus:outline-none focus:underline">
+                      {{ item.product.category.name|default:item.product.category }}
+                    </a>
+                    <h3 class="text-sm font-medium text-neutral-900 leading-tight mb-1">
+                      <a href="{{ item.product.get_url }}" class="hover:text-blue-600 transition-colors focus:outline-none focus:underline">
+                        {{ item.product.name }}
+                      </a>
+                    </h3>
+                    <div class="text-sm font-medium text-neutral-500 mt-1">
+                      ₹{{ item.product.price }}
+                    </div>
+                  </div>
+                  
+                  <a href="{% url 'cartdel' item.product.id %}" class="text-neutral-400 hover:text-red-600 transition-colors focus:outline-none" aria-label="Remove item" title="Remove">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </a>
+                </div>
+                
+                <div class="flex items-center justify-between mt-4">
+                  
+                  <!-- Quantity Controls -->
+                  <div class="flex items-center border border-neutral-200 rounded-lg bg-white overflow-hidden h-8">
+                    <a href="{% url 'cartMin' item.product.id %}" class="w-8 h-full flex items-center justify-center text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50 transition-colors focus:outline-none" aria-label="Decrease quantity">
+                      <i data-lucide="minus" class="w-3 h-3"></i>
+                    </a>
+                    <div class="w-10 h-full flex items-center justify-center text-sm font-medium text-neutral-700 border-x border-neutral-200">
+                      {{ item.quantity }}
+                    </div>
+                    <a href="{% url 'cartAdd' item.product.id %}" class="w-8 h-full flex items-center justify-center text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50 transition-colors focus:outline-none" aria-label="Increase quantity">
+                      <i data-lucide="plus" class="w-3 h-3"></i>
+                    </a>
+                  </div>
+                  
+                  <!-- Line Total via Alpine -->
+                  <div class="text-right">
+                    <span class="block text-xs text-neutral-500 mb-0.5">Subtotal</span>
+                    <span x-data="{ price: {{ item.product.price }}, qty: {{ item.quantity }} }" 
+                          x-text="'₹' + (price * qty)" 
+                          class="text-base font-semibold text-neutral-900">
+                    </span>
+                  </div>
+                  
+                </div>
+              </div>
+              
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+      
+      <!-- Order Summary (Right Column) -->
+      <div class="lg:col-span-4 flex flex-col gap-4 lg:sticky lg:top-24">
+        
+        <h2 class="text-base font-semibold text-neutral-900">Order Summary</h2>
+        
+        <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-6 flex flex-col gap-6">
+          
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between text-neutral-600">
+              <span>Subtotal</span>
+              <span class="font-medium text-neutral-900">₹{{ total }}</span>
+            </div>
+            
+            <div class="flex justify-between text-neutral-600">
+              <span>Shipping</span>
+              <span class="text-neutral-500 italic">Calculated at checkout</span>
+            </div>
+            
+            <div class="flex justify-between text-neutral-600">
+              <span>Tax</span>
+              <span class="text-neutral-500 italic">Calculated at checkout</span>
+            </div>
+          </div>
+          
+          <div class="h-px w-full bg-neutral-200"></div>
+          
+          <div class="flex justify-between items-center">
+            <span class="text-base font-medium text-neutral-900">Total</span>
+            <span class="text-xl font-bold text-neutral-900">₹{{ total }}</span>
+          </div>
+          
+          <div class="flex flex-col gap-3 mt-2">
+            <button disabled class="w-full flex items-center justify-center gap-2 py-3 px-6 bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors opacity-50 cursor-not-allowed">
+              Checkout
+            </button>
+            <p class="text-xs text-center text-neutral-500 mt-1 mb-2">Checkout is coming soon</p>
+            
+            <a href="/" class="w-full flex items-center justify-center gap-2 py-2.5 px-6 bg-white hover:bg-neutral-50 text-neutral-700 border border-neutral-200 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+              Continue Shopping
+            </a>
+          </div>
+          
+        </div>
+        
+      </div>
+      
     </div>
-    <br>
-    <div class="shopping-cart-footer">
-        <div class="column"><a class="btn btn-outline-secondary" href="/"><i class="icon-arrow-left"></i>&nbsp;Back to Shopping</a></div>
-        <div class="column"><a class="btn btn-primary" href="#" data-toast="" data-toast-type="success" data-toast-position="topRight" data-toast-icon="icon-circle-check" data-toast-title="Your cart" data-toast-message="is updated successfully!">Update Cart</a><a class="btn btn-success" href="#">Checkout</a></div>
-    </div>
+  {% endif %}
+
 </div>
-
-<style type="text/css">
-body{margin-top:20px;}
-select.form-control:not([size]):not([multiple]) {
-    height: 44px;
-}
-select.form-control {
-    padding-right: 38px;
-    background-position: center right 17px;
-    background-image: url(data:image/svg+xml;utf8;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iaXNv…9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8L3N2Zz4K);
-    background-repeat: no-repeat;
-    background-size: 9px 9px;
-}
-.form-control:not(textarea) {
-    height: 44px;
-}
-.form-control {
-    padding: 0 18px 3px;
-    border: 1px solid #dbe2e8;
-    border-radius: 22px;
-    background-color: #fff;
-    color: #606975;
-    font-family: "Maven Pro",Helvetica,Arial,sans-serif;
-    font-size: 14px;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-}
-
-.shopping-cart,
-.wishlist-table,
-.order-table {
-    margin-bottom: 20px
-}
-
-.shopping-cart .table,
-.wishlist-table .table,
-.order-table .table {
-    margin-bottom: 0
-}
-
-.shopping-cart .btn,
-.wishlist-table .btn,
-.order-table .btn {
-    margin: 0
-}
-
-.shopping-cart>table>thead>tr>th,
-.shopping-cart>table>thead>tr>td,
-.shopping-cart>table>tbody>tr>th,
-.shopping-cart>table>tbody>tr>td,
-.wishlist-table>table>thead>tr>th,
-.wishlist-table>table>thead>tr>td,
-.wishlist-table>table>tbody>tr>th,
-.wishlist-table>table>tbody>tr>td,
-.order-table>table>thead>tr>th,
-.order-table>table>thead>tr>td,
-.order-table>table>tbody>tr>th,
-.order-table>table>tbody>tr>td {
-    vertical-align: middle !important
-}
-
-.shopping-cart>table thead th,
-.wishlist-table>table thead th,
-.order-table>table thead th {
-    padding-top: 17px;
-    padding-bottom: 17px;
-    border-width: 1px
-}
-
-.shopping-cart .remove-from-cart,
-.wishlist-table .remove-from-cart,
-.order-table .remove-from-cart {
-    display: inline-block;
-    color: #ff5252;
-    font-size: 18px;
-    line-height: 1;
-    text-decoration: none
-}
-
-.shopping-cart .count-input,
-.wishlist-table .count-input,
-.order-table .count-input {
-    display: inline-block;
-    width: 100%;
-    width: 86px
-}
-
-.shopping-cart .product-item,
-.wishlist-table .product-item,
-.order-table .product-item {
-    display: table;
-    width: 100%;
-    min-width: 150px;
-    margin-top: 5px;
-    margin-bottom: 3px
-}
-
-.shopping-cart .product-item .product-thumb,
-.shopping-cart .product-item .product-info,
-.wishlist-table .product-item .product-thumb,
-.wishlist-table .product-item .product-info,
-.order-table .product-item .product-thumb,
-.order-table .product-item .product-info {
-    display: table-cell;
-    vertical-align: top
-}
-
-.shopping-cart .product-item .product-thumb,
-.wishlist-table .product-item .product-thumb,
-.order-table .product-item .product-thumb {
-    width: 130px;
-    padding-right: 20px
-}
-
-.shopping-cart .product-item .product-thumb>img,
-.wishlist-table .product-item .product-thumb>img,
-.order-table .product-item .product-thumb>img {
-    display: block;
-    width: 100%
-}
-
-@media screen and (max-width: 860px) {
-    .shopping-cart .product-item .product-thumb,
-    .wishlist-table .product-item .product-thumb,
-    .order-table .product-item .product-thumb {
-        display: none
-    }
-}
-
-.shopping-cart .product-item .product-info span,
-.wishlist-table .product-item .product-info span,
-.order-table .product-item .product-info span {
-    display: block;
-    font-size: 13px
-}
-
-.shopping-cart .product-item .product-info span>em,
-.wishlist-table .product-item .product-info span>em,
-.order-table .product-item .product-info span>em {
-    font-weight: 500;
-    font-style: normal
-}
-
-.shopping-cart .product-item .product-title,
-.wishlist-table .product-item .product-title,
-.order-table .product-item .product-title {
-    margin-bottom: 6px;
-    padding-top: 5px;
-    font-size: 16px;
-    font-weight: 500
-}
-
-.shopping-cart .product-item .product-title>a,
-.wishlist-table .product-item .product-title>a,
-.order-table .product-item .product-title>a {
-    transition: color .3s;
-    color: #374250;
-    line-height: 1.5;
-    text-decoration: none
-}
-
-.shopping-cart .product-item .product-title>a:hover,
-.wishlist-table .product-item .product-title>a:hover,
-.order-table .product-item .product-title>a:hover {
-    color: #0da9ef
-}
-
-.shopping-cart .product-item .product-title small,
-.wishlist-table .product-item .product-title small,
-.order-table .product-item .product-title small {
-    display: inline;
-    margin-left: 6px;
-    font-weight: 500
-}
-
-.wishlist-table .product-item .product-thumb {
-    display: table-cell !important
-}
-
-@media screen and (max-width: 576px) {
-    .wishlist-table .product-item .product-thumb {
-        display: none !important
-    }
-}
-
-.shopping-cart-footer {
-    display: table;
-    width: 100%;
-    padding: 10px 0;
-    border-top: 1px solid #e1e7ec
-}
-
-.shopping-cart-footer>.column {
-    display: table-cell;
-    padding: 5px 0;
-    vertical-align: middle
-}
-
-.shopping-cart-footer>.column:last-child {
-    text-align: right
-}
-
-.shopping-cart-footer>.column:last-child .btn {
-    margin-right: 0;
-    margin-left: 15px
-}
-
-@media (max-width: 768px) {
-    .shopping-cart-footer>.column {
-        display: block;
-        width: 100%
-    }
-    .shopping-cart-footer>.column:last-child {
-        text-align: center
-    }
-    .shopping-cart-footer>.column .btn {
-        width: 100%;
-        margin: 12px 0 !important
-    }
-}
-
-.coupon-form .form-control {
-    display: inline-block;
-    width: 100%;
-    max-width: 235px;
-    margin-right: 12px;
-}
-
-.form-control-sm:not(textarea) {
-    height: 36px;
-}
-
-
-
-</style>
-
-<script type="text/javascript">
-
-</script>
-</body>
-</html>
-{%endblock%}
+{% endblock %}
