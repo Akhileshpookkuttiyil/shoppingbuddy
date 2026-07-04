@@ -1,105 +1,87 @@
 {% extends 'base.html' %}
 {% load static %}
-{%block content%}
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-    .bos {
-        border:3px solid black;
-        }
- div {
-            padding: 1px 0;
-         }
-</style>
-</head>
-<body>
-    <div class="bos">
-    <!-- BREADCRUMB -->
-    <div id="breadcrumb" class="section">
-        <!-- container -->
-        <div class="container">
-            <!-- row -->
-            <div class="row">
-                <div class="col-md-12">
-                    <ul class="breadcrumb-tree">
-                        <li><a href="/">Home</a></li>
-                        <li><a href="#">{{product.category}}</a></li>
-                        <li class="active">{{product.name}}</li>
-                    </ul>
-                </div>
-            </div>
-            <!-- /row -->
-        </div>
-        <!-- /container -->
+
+{% block title %}{{ product.name }} - ShoppingBuddy{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-8">
+  
+  <!-- Breadcrumb Navigation -->
+  <nav aria-label="Breadcrumb" class="flex items-center text-sm font-medium text-neutral-500 overflow-hidden whitespace-nowrap mb-2">
+    <a href="/" class="hover:text-neutral-900 transition-colors focus:outline-none focus:underline">Home</a>
+    <i data-lucide="chevron-right" class="w-4 h-4 mx-2 text-neutral-400 flex-shrink-0"></i>
+    <a href="{{ product.category.get_url }}" class="hover:text-neutral-900 transition-colors focus:outline-none focus:underline">{{ product.category.name|default:product.category }}</a>
+    <i data-lucide="chevron-right" class="w-4 h-4 mx-2 text-neutral-400 flex-shrink-0"></i>
+    <span class="text-neutral-900 truncate" aria-current="page">{{ product.name }}</span>
+  </nav>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
+    
+    <!-- Left Column: Product Image -->
+    <div class="w-full flex flex-col gap-4">
+      <div class="relative w-full aspect-square bg-white border border-neutral-200 rounded-lg flex items-center justify-center p-8 lg:p-12">
+        {% if product.image %}
+          <img src="{{ product.image.url }}" alt="{{ product.name }}" class="absolute inset-0 w-full h-full object-contain p-8 lg:p-12">
+        {% else %}
+          <div class="flex flex-col items-center text-neutral-400">
+            <i data-lucide="image" class="w-12 h-12 mb-3 opacity-50"></i>
+            <span class="text-sm font-medium">No image</span>
+          </div>
+        {% endif %}
+      </div>
     </div>
-    <!-- /BREADCRUMB -->
 
-    <!-- SECTION -->
-    <div class="section">
-        <!-- container -->
-        <div class="container">
-            <!-- row -->
-            <div class="row">
-                <!-- Product main img -->
-                <div class="col-md-6">
-                    <div id="product-main-img">
-                        <div class="product-preview">
-                            <img src={{product.image.url}} alt="" style="height:350px; width:300px;">
-                        </div>
-                    </div>
-                </div>
-                <!-- /Product main img -->
+    <!-- Right Column: Product Information -->
+    <div class="flex flex-col">
+      
+      <!-- Basic Info -->
+      <a href="{{ product.category.get_url }}" class="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors mb-2 focus:outline-none focus:underline">
+        {{ product.category.name|default:product.category }}
+      </a>
+      <h1 class="text-2xl sm:text-3xl font-semibold text-neutral-900 mb-4 leading-tight">
+        {{ product.name }}
+      </h1>
+      
+      <div class="text-2xl font-bold text-neutral-900 mb-6">
+        ₹{{ product.price }}
+      </div>
 
-                <!-- Product details -->
-                <div class="col-md-6">
-                    <div class="product-details">
-                        <h2 class="product-name">{{product.name}}</h2>
-                        <div>
-                            <h3 class="product-price">Rs:{{product.price}}</h3>
-                            <span class="product-available">In Stock</span>
-                        </div>
-                        <p>{{product.description}}.</p>
+      <!-- Availability -->
+      <div class="flex items-center gap-2 mb-8">
+        <span class="text-sm font-medium text-neutral-700">Availability:</span>
+        {% if product.in_stock and product.stock > 0 %}
+          <span class="text-sm font-medium text-green-600">In Stock</span>
+        {% else %}
+          <span class="text-sm font-medium text-red-600">Out of Stock</span>
+        {% endif %}
+      </div>
 
-                        <div class="product-options">
-                            <label>
-                                Size
-                                <select class="input-select">
-                                    <option value="0">X</option>
-                                </select>
-                            </label>
-                            <label>
-                                Color
-                                <select class="input-select">
-                                    <option value="0"><b>{{product.color}}</b></option>
-                                </select>
-                            </label>
-                        </div>
+      <!-- Description -->
+      <div class="prose prose-sm text-neutral-600 mb-8 border-t border-b border-neutral-200 py-6">
+        {% if product.description %}
+          {{ product.description|linebreaks }}
+        {% else %}
+          <p class="text-neutral-500 italic">No description available.</p>
+        {% endif %}
+      </div>
 
-                        <div class="add-to-cart">
-                            <div class="qty-label">
-                                Qty
-                                <div class="input-number">
-                                    <input type="number">
-                                    <span class="qty-up">+</span>
-                                    <span class="qty-down">-</span>
-                                </div>
-                            </div>
-                            <a href="{%url 'cartAdd' product.id %}"><button class="add-to-cart-btn"><i class="fa fa-shopping-cart"></i> add to cart</button></a>
-                        </div>
-
-                        <ul class="product-links">
-                            <li>Category:</li>
-                            <li><a href="#">{{product.category}}</a></li>
-                        </ul>
-
-                    </div>
-                </div>
-                <!-- /Product details -->
-            </div>
-        </div>
+      <!-- Action Buttons -->
+      <div class="flex flex-col gap-3">
+        {% if product.in_stock and product.stock > 0 %}
+          <a href="{% url 'cartAdd' product.id %}" class="w-full flex items-center justify-center gap-2 py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+            Add to Cart
+          </a>
+        {% else %}
+          <button disabled class="w-full flex items-center justify-center gap-2 py-3 px-6 bg-neutral-100 text-neutral-400 border border-neutral-200 rounded-lg font-medium cursor-not-allowed">
+            <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+            Out of Stock
+          </button>
+        {% endif %}
+      </div>
+      
     </div>
+  </div>
+
 </div>
-</body>
-</html>
-{%endblock%}
+{% endblock %}
