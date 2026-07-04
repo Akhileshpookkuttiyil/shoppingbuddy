@@ -1,0 +1,82 @@
+<div class="group flex flex-col bg-white border border-neutral-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden h-full">
+  
+  <!-- Image Container -->
+  <a href="{{ product.get_url }}" class="relative w-full aspect-square bg-white flex items-center justify-center p-6 focus:outline-none focus:ring-2 focus:ring-blue-500 block">
+    {% if product.image %}
+      <img src="{{ product.image.url }}" 
+           alt="{{ product.name }}" 
+           loading="lazy"
+           class="absolute inset-0 w-full h-full object-contain p-6 transition-opacity duration-300 group-hover:opacity-90">
+    {% else %}
+      <div class="absolute inset-0 w-full h-full flex flex-col items-center justify-center text-neutral-400 bg-neutral-50">
+        <i data-lucide="image" class="w-8 h-8 mb-2 opacity-50"></i>
+        <span class="text-xs font-medium">No image</span>
+      </div>
+    {% endif %}
+    
+    <!-- Stock Status Badge (Absolute Overlay) -->
+    <div class="absolute top-3 left-3 flex flex-col gap-2 z-10">
+      {% if not product.in_stock or product.stock <= 0 %}
+        <span class="inline-flex items-center px-2 py-1 rounded bg-neutral-100 text-[10px] font-bold text-neutral-600 uppercase tracking-wider border border-neutral-200">
+          Out of Stock
+        </span>
+      {% elif product.stock < 10 %}
+        <span class="inline-flex items-center px-2 py-1 rounded bg-red-50 text-[10px] font-bold text-red-600 uppercase tracking-wider border border-red-100">
+          Low Stock
+        </span>
+      {% endif %}
+    </div>
+  </a>
+
+  <!-- Content Container -->
+  <div class="p-4 flex flex-col flex-grow border-t border-neutral-100">
+    
+    <!-- Category -->
+    <div class="mb-1">
+      <a href="{{ product.category.get_url }}" class="text-xs font-medium text-neutral-500 hover:text-neutral-900 transition-colors focus:outline-none focus:underline">
+        {{ product.category.name|default:product.category }}
+      </a>
+    </div>
+    
+    <!-- Title -->
+    <a href="{{ product.get_url }}" class="block focus:outline-none focus:underline hover:text-blue-600 transition-colors mb-3">
+      <h3 class="text-sm font-medium text-neutral-700 leading-tight line-clamp-2">
+        {{ product.name }}
+      </h3>
+    </a>
+    
+    <!-- Price & Actions -->
+    <div class="mt-auto flex items-center justify-between">
+      <span class="text-base font-semibold text-neutral-900">
+        ₹{{ product.price }}
+      </span>
+      
+      <div class="flex items-center gap-1">
+        <!-- View Details Button -->
+        <a href="{{ product.get_url }}" 
+           class="p-2 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+           aria-label="View details for {{ product.name }}"
+           title="View Details">
+          <i data-lucide="eye" class="w-4 h-4"></i>
+        </a>
+        
+        <!-- Add to Cart Button -->
+        {% if product.in_stock and product.stock > 0 %}
+          <a href="{% url 'cartAdd' product.id %}" 
+             class="flex items-center justify-center p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-sm"
+             aria-label="Add {{ product.name }} to cart"
+             title="Add to Cart">
+            <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+          </a>
+        {% else %}
+          <button disabled 
+                  class="flex items-center justify-center p-2 bg-neutral-100 text-neutral-400 rounded-lg cursor-not-allowed border border-neutral-200"
+                  aria-label="Out of stock"
+                  title="Out of Stock">
+            <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+          </button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
