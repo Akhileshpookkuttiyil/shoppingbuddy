@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- Tailwind CSS -->
-  <link rel="stylesheet" href="{% static 'css/output.css' %}?v=3.0">
+  <link rel="stylesheet" href="{% static 'css/output.css' %}?v=3.5">
   
   <!-- Alpine.js -->
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
@@ -68,27 +68,63 @@
     {% endblock %}
   </main>
 
-  <!-- Global Footer -->
-  <footer class="bg-white border-t border-neutral-200 mt-auto py-8">
-    <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
-      
-      <div class="flex items-center gap-2">
-        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-          <i data-lucide="shopping-bag" class="text-white w-4 h-4"></i>
+  <footer class="bg-white border-t border-neutral-200 mt-auto py-6">
+    <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row justify-between gap-6 mb-6">
+        
+        <div class="flex flex-col gap-2 max-w-sm">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 bg-blue-600 rounded-md flex items-center justify-center">
+              <i data-lucide="shopping-bag" class="text-white w-3.5 h-3.5"></i>
+            </div>
+            <span class="font-semibold text-base tracking-tight text-neutral-900">ShoppingBuddy</span>
+          </div>
+          <p class="text-neutral-500 text-sm leading-relaxed">
+            Your premium e-commerce destination for high-quality products. We deliver excellence and customer satisfaction.
+          </p>
         </div>
-        <span class="font-semibold text-lg tracking-tight text-neutral-900">ShoppingBuddy</span>
+        
+        <div>
+          <h3 class="font-semibold text-neutral-900 mb-2 text-sm">Shop</h3>
+          <ul class="space-y-1 text-sm text-neutral-500">
+            <li><a href="/" class="hover:text-blue-600 transition-colors">All Products</a></li>
+            <li><a href="#" class="hover:text-blue-600 transition-colors">New Arrivals</a></li>
+            <li><a href="#" class="hover:text-blue-600 transition-colors">Best Sellers</a></li>
+            <li><a href="#" class="hover:text-blue-600 transition-colors">Deals & Offers</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="font-semibold text-neutral-900 mb-2 text-sm">Support</h3>
+          <ul class="space-y-1 text-sm text-neutral-500">
+            <li><a href="#" class="hover:text-blue-600 transition-colors">Help Center</a></li>
+            <li><a href="#" class="hover:text-blue-600 transition-colors">Track Order</a></li>
+            <li><a href="#" class="hover:text-blue-600 transition-colors">Returns</a></li>
+            <li><a href="#" class="hover:text-blue-600 transition-colors">Contact Us</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="font-semibold text-neutral-900 mb-2 text-sm">Legal</h3>
+          <ul class="space-y-1 text-sm text-neutral-500">
+            <li><a href="#" class="hover:text-blue-600 transition-colors">Terms of Service</a></li>
+            <li><a href="#" class="hover:text-blue-600 transition-colors">Privacy Policy</a></li>
+            <li><a href="#" class="hover:text-blue-600 transition-colors">Cookie Policy</a></li>
+          </ul>
+        </div>
+        
       </div>
       
-      <div class="flex gap-6 text-sm font-medium">
-        <a href="/" class="text-neutral-500 hover:text-neutral-900 transition-colors focus:outline-none focus:underline">Shop</a>
-        <a href="#" class="text-neutral-500 hover:text-neutral-900 transition-colors focus:outline-none focus:underline">Help</a>
-        <a href="#" class="text-neutral-500 hover:text-neutral-900 transition-colors focus:outline-none focus:underline">Contact</a>
+      <div class="border-t border-neutral-200 pt-5 flex flex-col md:flex-row justify-between items-center gap-3">
+        <div class="text-neutral-400 text-sm">
+          &copy; 2026 ShoppingBuddy. All rights reserved.
+        </div>
+        <div class="flex gap-4">
+          <a href="#" class="text-neutral-400 hover:text-neutral-600 transition-colors" aria-label="Facebook"><i data-lucide="facebook" class="w-4 h-4"></i></a>
+          <a href="#" class="text-neutral-400 hover:text-neutral-600 transition-colors" aria-label="Twitter"><i data-lucide="twitter" class="w-4 h-4"></i></a>
+          <a href="#" class="text-neutral-400 hover:text-neutral-600 transition-colors" aria-label="Instagram"><i data-lucide="instagram" class="w-4 h-4"></i></a>
+        </div>
       </div>
-      
-      <div class="text-neutral-400 text-sm">
-        &copy; 2026 ShoppingBuddy. All rights reserved.
-      </div>
-      
     </div>
   </footer>
 
