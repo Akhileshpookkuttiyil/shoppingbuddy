@@ -1,52 +1,45 @@
 {% extends 'base.html' %}
 {% load static %}
-{%block content%}
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-    .bos {
-        border:3px solid black;
-        }
-.container {
-    padding: 80px;
-}
- div {
-            padding: 1px 0;
-         }
-</style>
-</head>
-<body>
-<div class="bos">
-    <br>
-<h4> Your search matched {{count}} product(s)</h4>
-<div class="container">
-    <br>
-				<!-- Products tab & slick -->
-            <div class="row">
-                  <!-- product -->
-                  {% for product in products %}
-                  <div class="col-md-3">
-                    <div class="product">
-                    <div class="product-img">
-                      <img src="{{product.image.url}}" style='height:150px; width:228px;'  alt="">
-                    </div>
-                    <div class="product-body">
-                      <p class="product-category">{{product.category}}</p>
-                      <h3 class="product-name"><a href="">{{product.name}}</a></h3>
-                      <h4 class="product-price">${{product.price}} </h4>
-                    </div>
-                    <div class="add-to-cart">
-                      <a href="{% url 'cartAdd' product.id %}"><button class="add-to-cart-btn"><i class="fa fa-shopping-cart"></i> add to cart</button></a>
-                    </div>
-                  </div>
-                  <br><br><br>
-                </div>
-                  {% endfor %}
-                  <!-- /product -->
-        </div>
-      </div>
+
+{% block title %}Search Results - ShoppingBuddy{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-8 sm:gap-10">
+  
+  <div class="flex items-center justify-between border-b border-neutral-200 pb-6">
+    <div class="flex flex-col gap-1">
+      <h1 class="text-2xl font-semibold text-neutral-900">Search Results</h1>
+      <p class="text-neutral-500 text-sm">
+        Found <span class="font-medium text-neutral-900">{{ count }}</span> product{{ count|pluralize }} matching "<span class="font-medium text-neutral-900">{{ query }}</span>"
+      </p>
     </div>
-</body>
-</html>
-{%endblock%}
+  </div>
+
+  <section>
+    {% if products %}
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {% for product in products %}
+          {% include 'components/_product_card.html' %}
+        {% endfor %}
+      </div>
+      
+      {% include 'components/_pagination.html' %}
+    {% else %}
+      <!-- Empty State -->
+      <div class="bg-white rounded-lg border border-neutral-200 p-10 text-center flex flex-col items-center">
+        <div class="mb-4">
+          <i data-lucide="search-x" class="w-10 h-10 text-neutral-400"></i>
+        </div>
+        <h3 class="text-base font-semibold text-neutral-900 mb-1">No matches found</h3>
+        <p class="text-neutral-500 text-sm max-w-sm mx-auto mb-6">
+          We couldn't find any products matching "{{ query }}". Try checking your spelling or using more general terms.
+        </p>
+        <a href="/" class="inline-flex items-center justify-center px-5 py-2 border border-neutral-200 text-sm font-medium rounded-lg text-neutral-700 bg-white hover:bg-neutral-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+          Clear Search
+        </a>
+      </div>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}
