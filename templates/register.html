@@ -1,84 +1,82 @@
 {% extends 'base.html' %}
 {% load static %}
-{%block content%}
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-.bos{
-border:3px solid black;
-}
-.container {
-    padding: 15px;
-}
 
-input[type=text], input[type=password], textarea {
-  width: 100%;
-  padding: 15px;
-  margin: 5px 0 22px 0;
-  display: inline-block;
-  border: none;
-  background: #f1f1f1;
-}
-input[type=text]:focus, input[type=password]:focus {
-  background-color: orange;
-  outline: none;
-}
- div {
-            padding: 5px 0;
-         }
-hr {
-  border: 1px solid #f1f1f1;
-  margin-bottom: 25px;
-}
-.registerbtn {
-  background-color: #4CAF50;
-  color: white;
-  padding: 16px 20px;
-  margin: 8px 0;
-  border: none;
-  cursor: pointer;
-  width: 100%;
-  opacity: 0.9;
-}
-.registerbtn:hover {
-  opacity: 1;
-}
-</style>
-</head>
-<body>
-  <div class="bos">
-<form method="post" action="register">
-    {% csrf_token %}
-  <div class="container">
-  <center>  <h1> Register</h1> </center>
-  <hr>
-  <label> Firstname </label>
-<input type="text" name="firstname" placeholder= "Firstname" size="15" required />
-<label> Lastname: </label>
-<input type="text" name="lastname" placeholder="Lastname" size="15" required />
+{% block title %}Register - ShoppingBuddy{% endblock %}
 
-<label> Username: </label>
-<input type="text" name="username" placeholder="Username" size="15" required />
+{% block content %}
+<div class="flex items-center justify-center min-h-[60vh]">
+  
+  <div class="w-full max-w-md bg-white border border-neutral-200 rounded-lg shadow-sm p-8 sm:p-10">
+    
+    <div class="mb-8 text-center">
+      <h1 class="text-2xl font-semibold text-neutral-900 mb-2">Create an Account</h1>
+      <p class="text-neutral-500 text-sm">Join ShoppingBuddy for a better experience.</p>
+    </div>
 
+    {% if form.non_field_errors %}
+      <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+        <i data-lucide="alert-circle" class="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0"></i>
+        <div class="flex flex-col">
+          {% for error in form.non_field_errors %}
+            <span class="text-sm font-medium text-red-700">{{ error }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
 
- <label for="email"><b>Email</b></label>
- <input type="text" placeholder="Enter Email" name="email" required>
-
-    <label for="psw"><b>Password</b></label>
-    <input type="password" placeholder="Enter Password" name="password1" required>
-
-    <label for="psw-repeat"><b>Re-type Password</b></label>
-    <input type="password" placeholder="Retype Password" name="password2" required>
-    <button type="submit" class="registerbtn">Register</button>
-          <div style="text-align:center">
-        {% for message in messages %}
-        <p style="color:red; font-size:20px;">{{message}}</p>
+    <form method="post" action="{% url 'register' %}" class="space-y-5" id="auth-form">
+      {% csrf_token %}
+      
+      <div class="space-y-4">
+        {% for field in form %}
+          <div class="flex flex-col gap-1.5">
+            <label for="{{ field.id_for_label }}" class="text-sm font-medium text-neutral-700">{{ field.label }}</label>
+            <div class="relative">
+              {{ field }}
+            </div>
+            {% if field.help_text %}
+              <span class="text-xs text-neutral-500">{{ field.help_text|safe }}</span>
+            {% endif %}
+            {% if field.errors %}
+              <div class="text-sm font-medium text-red-500 flex items-center gap-1.5 mt-1">
+                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                {{ field.errors|striptags }}
+              </div>
+            {% endif %}
+          </div>
         {% endfor %}
-         </div>
+      </div>
+
+      <button type="submit" class="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mt-6">
+        Create Account
+      </button>
+    </form>
+
+    <div class="mt-8 pt-6 border-t border-neutral-100 flex flex-col items-center gap-4">
+      <p class="text-neutral-500 text-sm">
+        Already have an account? 
+        <a href="{% url 'login' %}" class="text-blue-600 font-medium hover:text-blue-700 hover:underline transition-colors focus:outline-none">Sign in here</a>
+      </p>
+    </div>
+    
   </div>
-</form>
+
 </div>
-</body>
-</html>
-{%endblock%}
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Automatically inject Tailwind classes into the Django rendered inputs
+    const form = document.getElementById('auth-form');
+    if (form) {
+      form.querySelectorAll('input:not([type="hidden"]):not([type="submit"]), select, textarea').forEach(input => {
+        input.classList.add(
+          'w-full', 'px-3', 'py-2', 'rounded-lg', 'border', 'border-neutral-300', 
+          'bg-white', 'text-neutral-900', 'text-sm', 'placeholder-neutral-400',
+          'focus:outline-none', 'focus:ring-1', 'focus:ring-blue-500', 'focus:border-blue-500', 
+          'transition-all'
+        );
+      });
+    }
+  });
+</script>
+{% endblock %}
