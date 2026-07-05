@@ -1,3 +1,148 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  /* Typography baseline */
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  /* ─────────────────────────────────────────
+     BUTTONS
+  ───────────────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-medium rounded-lg
+           transition-colors duration-150
+           focus:outline-none focus:ring-2 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+  .btn-md {
+    @apply px-4 py-2.5 text-sm;
+  }
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+
+  /* Primary */
+  .btn-primary {
+    @apply btn btn-md bg-blue-600 text-white shadow-sm
+           hover:bg-blue-700
+           focus:ring-blue-500;
+  }
+  .btn-primary-lg {
+    @apply btn btn-lg bg-blue-600 text-white shadow-sm
+           hover:bg-blue-700
+           focus:ring-blue-500;
+  }
+
+  /* Secondary / Outline */
+  .btn-secondary {
+    @apply btn btn-md bg-white text-neutral-700 border border-neutral-200 shadow-sm
+           hover:bg-neutral-50 hover:text-neutral-900
+           focus:ring-blue-500;
+  }
+
+  /* Ghost */
+  .btn-ghost {
+    @apply btn btn-md text-neutral-600
+           hover:text-neutral-900 hover:bg-neutral-100
+           focus:ring-blue-500;
+  }
+
+  /* Icon button */
+  .btn-icon {
+    @apply p-2 rounded-lg text-neutral-500
+           hover:text-neutral-900 hover:bg-neutral-100
+           focus:outline-none focus:ring-2 focus:ring-blue-500
+           transition-colors duration-150;
+  }
+
+  /* Danger */
+  .btn-danger {
+    @apply btn btn-md bg-white text-red-600 border border-red-200
+           hover:bg-red-50
+           focus:ring-red-500;
+  }
+
+  /* ─────────────────────────────────────────
+     FORM ELEMENTS
+  ───────────────────────────────────────── */
+  .form-input {
+    @apply block w-full px-3 py-2.5 rounded-lg border border-neutral-300
+           bg-white text-neutral-900 text-sm placeholder-neutral-400
+           focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500
+           disabled:bg-neutral-50 disabled:text-neutral-500 disabled:cursor-not-allowed
+           transition-colors duration-150;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-neutral-700 mb-1.5;
+  }
+
+  .form-error {
+    @apply flex items-center gap-1.5 mt-1.5 text-sm font-medium text-red-600;
+  }
+
+  .form-help {
+    @apply mt-1.5 text-xs text-neutral-500;
+  }
+
+  /* ─────────────────────────────────────────
+     CARDS
+  ───────────────────────────────────────── */
+  .card {
+    @apply bg-white border border-neutral-200 rounded-lg;
+  }
+
+  .card-padded {
+    @apply card p-6;
+  }
+
+  .card-hover {
+    @apply card shadow-sm transition-shadow duration-200
+           hover:shadow-md;
+  }
+
+  /* ─────────────────────────────────────────
+     BADGES
+  ───────────────────────────────────────── */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide;
+  }
+
+  .badge-neutral {
+    @apply badge bg-neutral-100 text-neutral-600 border border-neutral-200;
+  }
+
+  .badge-danger {
+    @apply badge bg-red-50 text-red-600 border border-red-100;
+  }
+
+  .badge-success {
+    @apply badge bg-green-50 text-green-700 border border-green-100;
+  }
+
+  .badge-info {
+    @apply badge bg-blue-50 text-blue-700 border border-blue-100;
+  }
+
+  /* ─────────────────────────────────────────
+     SECTION LAYOUT
+  ───────────────────────────────────────── */
+  .section-title {
+    @apply text-base font-semibold text-neutral-900 mb-4;
+  }
+
+  .page-container {
+    @apply flex flex-col gap-10;
+  }
+}

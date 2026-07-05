@@ -4,38 +4,133 @@
 {% block title %}Home - ShoppingBuddy{% endblock %}
 
 {% block content %}
-<div class="flex flex-col gap-10">
-  
-  <!-- Hero Section -->
-  <section class="bg-white border border-neutral-200 rounded-lg px-8 py-10 sm:py-12 flex flex-col sm:flex-row items-center justify-between gap-6">
-    <div class="max-w-xl text-center sm:text-left">
-      <h1 class="text-2xl sm:text-3xl font-semibold text-neutral-900 mb-3">
-        The minimal e-commerce experience.
-      </h1>
-      <p class="text-neutral-600 text-base">
-        Discover premium products with uncompromised quality and speed.
-      </p>
+<div class="page-container">
+
+  <!-- ─── Hero Carousel ─────────────────────────────────────────────── -->
+  <section
+    x-data="{
+      active: 0,
+      timer: null,
+      slides: [
+        {
+          tag:   'New Arrival',
+          title: 'Sony WH-1000XM5',
+          desc:  'Industry-leading noise cancellation with up to 30 hours of battery life. Exceptional clarity, all-day comfort.',
+          btn:   'View Product',
+          link:  '#products',
+          image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?q=80&w=1976&auto=format&fit=crop'
+        },
+        {
+          tag:   'Best Seller',
+          title: 'Premium Smartwatch',
+          desc:  'Advanced health sensors, always-on display, and seamless connectivity. Engineered for every part of your day.',
+          btn:   'Shop Now',
+          link:  '#products',
+          image: 'https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?q=80&w=2070&auto=format&fit=crop'
+        },
+        {
+          tag:   'Limited Stock',
+          title: 'Studio Monitor Speakers',
+          desc:  'Professional-grade audio reproduction for creators. Hear every detail exactly as it was intended to be heard.',
+          btn:   'View Product',
+          link:  '#products',
+          image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=2070&auto=format&fit=crop'
+        }
+      ],
+      play() {
+        if (this.timer) return;
+        this.timer = setInterval(() => { this.active = (this.active + 1) % this.slides.length; }, 6000);
+      },
+      pause() { clearInterval(this.timer); this.timer = null; },
+      go(i) { this.active = i; },
+      prev() { this.active = (this.active - 1 + this.slides.length) % this.slides.length; },
+      next() { this.active = (this.active + 1) % this.slides.length; }
+    }"
+    x-init="
+      play();
+      document.addEventListener('visibilitychange', () => document.hidden ? pause() : play());
+    "
+    @mouseenter="pause()"
+    @mouseleave="play()"
+    class="card shadow-sm overflow-hidden"
+    aria-label="Featured products carousel"
+  >
+
+    <!-- Slides -->
+    <div class="relative h-[420px] sm:h-[380px] md:h-[340px]">
+      <template x-for="(slide, i) in slides" :key="i">
+        <div
+          x-show="active === i"
+          x-transition:enter="transition-opacity duration-500 ease-out"
+          x-transition:enter-start="opacity-0"
+          x-transition:enter-end="opacity-100"
+          x-transition:leave="transition-opacity duration-500 ease-in absolute inset-0"
+          x-transition:leave-start="opacity-100"
+          x-transition:leave-end="opacity-0"
+          class="absolute inset-0 flex flex-col sm:flex-row"
+        >
+          <!-- Left — Text (60%) -->
+          <div class="flex flex-col justify-center px-8 py-8 sm:py-0 sm:px-10 lg:px-14 w-full sm:w-[60%]">
+            <span class="badge badge-info mb-4 self-start" x-text="slide.tag"></span>
+            <h2 class="text-2xl sm:text-3xl font-bold text-neutral-900 tracking-tight leading-tight mb-3" x-text="slide.title"></h2>
+            <p class="text-neutral-500 text-sm sm:text-base leading-relaxed mb-6 max-w-md" x-text="slide.desc"></p>
+            <div>
+              <a :href="slide.link" class="btn-primary" x-text="slide.btn"></a>
+            </div>
+          </div>
+
+          <!-- Right — Image (40%) -->
+          <div class="hidden sm:flex w-[40%] items-center justify-center bg-neutral-50 border-l border-neutral-100 p-8">
+            <img
+              :src="slide.image"
+              :alt="slide.title"
+              loading="lazy"
+              class="w-full h-full object-contain max-h-[280px] transition-opacity duration-300"
+            >
+          </div>
+        </div>
+      </template>
     </div>
-    <div class="flex-shrink-0">
-      <a href="#products" class="inline-flex justify-center items-center px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-sm">
-        Shop Now
-      </a>
+
+    <!-- Bottom bar — pagination + controls -->
+    <div class="flex items-center justify-between px-8 sm:px-10 lg:px-14 h-12 border-t border-neutral-100 bg-neutral-50/70">
+      <!-- Dots -->
+      <div class="flex items-center gap-2" role="tablist" aria-label="Slide navigation">
+        <template x-for="(slide, i) in slides" :key="i">
+          <button
+            @click="go(i)"
+            :aria-selected="active === i"
+            :aria-label="`Go to slide ${i + 1}: ${slide.title}`"
+            class="h-1.5 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+            :class="active === i ? 'w-6 bg-blue-600' : 'w-1.5 bg-neutral-300 hover:bg-neutral-400'"
+          ></button>
+        </template>
+      </div>
+
+      <!-- Prev / Next -->
+      <div class="flex items-center gap-1">
+        <button @click="prev()" class="btn-icon" aria-label="Previous slide">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </button>
+        <button @click="next()" class="btn-icon" aria-label="Next slide">
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
     </div>
+
   </section>
 
-  <!-- Categories Section -->
+
+  <!-- ─── Categories ────────────────────────────────────────────────── -->
   <section id="categories" class="scroll-mt-24">
-    <div class="mb-4">
-      <h2 class="text-lg font-semibold text-neutral-900">Categories</h2>
-    </div>
-    
+    <h2 class="section-title">Browse by Category</h2>
     {% if categories %}
       <div class="flex flex-wrap gap-2">
-        <a href="/" class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-neutral-900 text-white shadow-sm hover:bg-neutral-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <a href="/" class="btn-secondary text-sm px-4 py-2 !bg-neutral-900 !text-white !border-neutral-900 hover:!bg-neutral-800">
           All Products
         </a>
         {% for category in categories %}
-          <a href="{{ category.get_url }}" class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-white border border-neutral-200 text-neutral-600 shadow-sm hover:bg-neutral-50 hover:text-neutral-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <a href="{{ category.get_url }}" class="btn-secondary text-sm px-4 py-2">
             {{ category.name|default:category }}
           </a>
         {% endfor %}
@@ -45,33 +140,26 @@
     {% endif %}
   </section>
 
-  <!-- Featured Products Section -->
+
+  <!-- ─── Featured Products ─────────────────────────────────────────── -->
   <section id="products" class="scroll-mt-24">
-    <div class="mb-6">
-      <h2 class="text-lg font-semibold text-neutral-900">Featured Products</h2>
-    </div>
-    
+    <h2 class="section-title">Featured Products</h2>
     {% if products %}
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {% for product in products %}
           {% include 'components/_product_card.html' %}
         {% endfor %}
       </div>
-      
       {% include 'components/_pagination.html' %}
     {% else %}
       <!-- Empty State -->
-      <div class="bg-white rounded-lg border border-neutral-200 p-10 text-center flex flex-col items-center">
-        <div class="mb-4">
-          <i data-lucide="package-x" class="w-10 h-10 text-neutral-400"></i>
-        </div>
+      <div class="card-padded flex flex-col items-center text-center py-14">
+        <i data-lucide="package-x" class="w-10 h-10 text-neutral-300 mb-4"></i>
         <h3 class="text-base font-semibold text-neutral-900 mb-1">No products found</h3>
-        <p class="text-neutral-500 text-sm max-w-sm mx-auto mb-6">
-          We are currently restocking our catalog. Please check back later.
+        <p class="text-neutral-500 text-sm max-w-xs mx-auto mb-6">
+          We're currently restocking our catalog. Please check back soon.
         </p>
-        <a href="/" class="inline-flex items-center justify-center px-5 py-2 border border-neutral-200 text-sm font-medium rounded-lg text-neutral-700 bg-white hover:bg-neutral-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
-          Refresh Page
-        </a>
+        <a href="/" class="btn-secondary">Refresh</a>
       </div>
     {% endif %}
   </section>
