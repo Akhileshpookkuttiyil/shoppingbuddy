@@ -3,11 +3,50 @@
 
 {% block title %}Sign In - ShoppingBuddy{% endblock %}
 
-{% block content %}
-<div class="flex items-center justify-center min-h-[75vh] w-full" x-data="{ showPassword: false, isLoading: false }">
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content_wrapper %}
+<style>
+  .auth-shell {
+    height: 100dvh;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    background-color: #f8fafc; /* bg-neutral-50 */
+  }
+  .auth-container {
+    transform-origin: center center;
+    transition: transform 0.2s ease;
+  }
+  @media (max-height: 1050px) {
+    .auth-container { transform: scale(0.90); }
+  }
+  @media (max-height: 950px) {
+    .auth-container { transform: scale(0.85); }
+  }
+  @media (max-height: 850px) {
+    .auth-container { transform: scale(0.75); }
+  }
+  @media (max-height: 750px) {
+    .auth-container { transform: scale(0.65); }
+  }
+  @media (max-height: 650px) {
+    .auth-container { transform: scale(0.55); }
+  }
+  @media (max-height: 550px) {
+    .auth-container { transform: scale(0.45); }
+  }
+</style>
+
+<div class="auth-shell" x-data="{ showPassword: false, isLoading: false }">
   
   <!-- Main Auth Container: Split Pane -->
-  <div class="w-full max-w-5xl bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-neutral-100 flex overflow-hidden min-h-[600px]">
+  <div class="auth-container w-full max-w-6xl bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-neutral-100 flex overflow-hidden min-h-[600px]">
     
     <!-- Left Visual Section (45%) -->
     <div class="hidden lg:flex flex-col relative w-[45%] bg-neutral-900 overflow-hidden p-12">
@@ -57,6 +96,14 @@
     <!-- Right Form Section (55%) -->
     <div class="w-full lg:w-[55%] flex flex-col justify-center p-8 sm:p-12 lg:p-16 relative">
       
+      <!-- Back Button -->
+      <a href="{% url 'home' %}" class="absolute top-6 left-6 sm:top-8 sm:left-8 flex items-center gap-2 text-neutral-500 hover:text-neutral-900 transition-colors group text-sm font-medium z-10">
+        <div class="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center group-hover:bg-neutral-200 transition-colors">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        </div>
+        <span class="hidden sm:inline">Back to Home</span>
+      </a>
+
       <div class="max-w-[400px] w-full mx-auto flex flex-col">
         
         <!-- Mobile Logo (hidden on desktop) -->
@@ -170,6 +217,15 @@
       // Add standard form classes and padding for icons
       form.querySelectorAll('input:not([type="checkbox"]):not([type="hidden"]):not([type="submit"])').forEach(el => {
         el.classList.add('form-input', 'pl-10');
+        
+        // Add placeholder based on label
+        if (!el.getAttribute('placeholder')) {
+          const label = document.querySelector(`label[for="${el.id}"]`);
+          if (label) {
+            el.setAttribute('placeholder', `Enter your ${label.innerText.trim().toLowerCase()}`);
+          }
+        }
+
         // If it's a password field, hook it up to alpine ref
         if(el.type === 'password' || el.name.toLowerCase().includes('password')) {
             el.setAttribute('x-ref', 'passInput');
