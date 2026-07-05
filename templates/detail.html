@@ -4,82 +4,233 @@
 {% block title %}{{ product.name }} - ShoppingBuddy{% endblock %}
 
 {% block content %}
-<div class="flex flex-col gap-8">
-  
-  <!-- Breadcrumb Navigation -->
-  <nav aria-label="Breadcrumb" class="flex items-center text-sm font-medium text-neutral-500 overflow-hidden whitespace-nowrap mb-2">
-    <a href="/" class="hover:text-neutral-900 transition-colors focus:outline-none focus:underline">Home</a>
-    <i data-lucide="chevron-right" class="w-4 h-4 mx-2 text-neutral-400 flex-shrink-0"></i>
-    <a href="{{ product.category.get_url }}" class="hover:text-neutral-900 transition-colors focus:outline-none focus:underline">{{ product.category.name|default:product.category }}</a>
-    <i data-lucide="chevron-right" class="w-4 h-4 mx-2 text-neutral-400 flex-shrink-0"></i>
-    <span class="text-neutral-900 truncate" aria-current="page">{{ product.name }}</span>
+<!-- Use a single x-data context for variants and zoom -->
+<div x-data="{ 
+       selectedColor: 'Black', 
+       selectedSize: 'M',
+       zoom: false,
+       zoomX: 0,
+       zoomY: 0,
+       updateZoom(e) {
+         const rect = e.target.getBoundingClientRect();
+         const x = (e.clientX - rect.left) / rect.width * 100;
+         const y = (e.clientY - rect.top) / rect.height * 100;
+         this.zoomX = x;
+         this.zoomY = y;
+       }
+     }" 
+     class="flex flex-col gap-8 pb-20 lg:pb-0">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="Breadcrumb">
+    <ol class="flex items-center gap-1 text-sm text-neutral-500 flex-wrap">
+      <li>
+        <a href="/" class="hover:text-neutral-900 transition-colors focus:outline-none focus:underline">Home</a>
+      </li>
+      <li><i data-lucide="chevron-right" class="w-3.5 h-3.5 text-neutral-300 mx-0.5 flex-shrink-0 inline"></i></li>
+      <li>
+        <a href="{{ product.category.get_url }}" class="hover:text-neutral-900 transition-colors focus:outline-none focus:underline">
+          {{ product.category.name|default:product.category }}
+        </a>
+      </li>
+      <li><i data-lucide="chevron-right" class="w-3.5 h-3.5 text-neutral-300 mx-0.5 flex-shrink-0 inline"></i></li>
+      <li class="text-neutral-900 font-medium truncate max-w-[240px]" aria-current="page">{{ product.name }}</li>
+    </ol>
   </nav>
 
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
-    
-    <!-- Left Column: Product Image -->
-    <div class="w-full flex flex-col gap-4">
-      <div class="relative w-full aspect-square bg-white border border-neutral-200 rounded-lg flex items-center justify-center p-8 lg:p-12">
+  <!-- Product Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start relative">
+
+    <!-- Left: Image (with Zoom) -->
+    <div class="card overflow-hidden sticky top-24">
+      <div 
+        @mouseenter="zoom = true" 
+        @mouseleave="zoom = false"
+        @mousemove="updateZoom($event)"
+        class="relative aspect-square bg-neutral-50 p-6 lg:p-10 flex items-center justify-center overflow-hidden cursor-crosshair"
+      >
         {% if product.image %}
-          <img src="{{ product.image.url }}" alt="{{ product.name }}" class="absolute inset-0 w-full h-full object-contain p-8 lg:p-12">
+          <!-- Base Image -->
+          <img
+            src="{{ product.image.url }}"
+            alt="{{ product.name }}"
+            class="absolute inset-0 w-full h-full object-contain p-6 lg:p-10 transition-opacity duration-200"
+            :class="{ 'opacity-0': zoom }"
+          >
+          <!-- Zoomed Image -->
+          <div 
+            x-show="zoom"
+            class="absolute inset-0 bg-no-repeat bg-neutral-50 pointer-events-none"
+            :style="`background-image: url('${'{{ product.image.url }}'}'); background-size: 250%; background-position: ${zoomX}% ${zoomY}%;`"
+            style="display: none;"
+          ></div>
         {% else %}
-          <div class="flex flex-col items-center text-neutral-400">
-            <i data-lucide="image" class="w-12 h-12 mb-3 opacity-50"></i>
+          <div class="flex flex-col items-center text-neutral-300">
+            <i data-lucide="image" class="w-12 h-12 mb-2"></i>
             <span class="text-sm font-medium">No image</span>
           </div>
+        {% endif %}
+
+        <!-- Stock badge on image -->
+        {% if not product.in_stock or product.stock <= 0 %}
+          <span class="badge badge-neutral absolute top-4 left-4">Out of stock</span>
+        {% elif product.stock < 10 %}
+          <span class="badge badge-danger absolute top-4 left-4">Only {{ product.stock }} left</span>
         {% endif %}
       </div>
     </div>
 
-    <!-- Right Column: Product Information -->
-    <div class="flex flex-col">
-      
-      <!-- Basic Info -->
-      <a href="{{ product.category.get_url }}" class="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors mb-2 focus:outline-none focus:underline">
-        {{ product.category.name|default:product.category }}
-      </a>
-      <h1 class="text-2xl sm:text-3xl font-semibold text-neutral-900 mb-4 leading-tight">
-        {{ product.name }}
-      </h1>
-      
-      <div class="text-2xl font-bold text-neutral-900 mb-6">
-        ₹{{ product.price }}
+    <!-- Right: Info -->
+    <div class="flex flex-col gap-6">
+
+      <!-- Header -->
+      <div class="flex flex-col gap-2">
+        <a href="{{ product.category.get_url }}"
+           class="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors focus:outline-none focus:underline self-start">
+          {{ product.category.name|default:product.category }}
+        </a>
+        <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 leading-tight tracking-tight">
+          {{ product.name }}
+        </h1>
       </div>
 
-      <!-- Availability -->
-      <div class="flex items-center gap-2 mb-8">
-        <span class="text-sm font-medium text-neutral-700">Availability:</span>
+      <!-- Price + Availability -->
+      <div class="flex items-center gap-4">
+        <span class="text-3xl font-bold text-neutral-900">₹{{ product.price }}</span>
+        <span class="h-5 w-px bg-neutral-200"></span>
         {% if product.in_stock and product.stock > 0 %}
-          <span class="text-sm font-medium text-green-600">In Stock</span>
+          <div class="flex items-center gap-1.5 text-sm font-medium text-green-700">
+            <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+            In Stock
+          </div>
         {% else %}
-          <span class="text-sm font-medium text-red-600">Out of Stock</span>
+          <div class="flex items-center gap-1.5 text-sm font-medium text-red-600">
+            <i data-lucide="x-circle" class="w-4 h-4"></i>
+            Out of Stock
+          </div>
         {% endif %}
+      </div>
+
+      <!-- Variants (UI Only) -->
+      <div class="flex flex-col gap-5 py-2 border-y border-neutral-100">
+        
+        <!-- Color Selection -->
+        <div>
+          <h3 class="text-sm font-medium text-neutral-900 mb-3">Color: <span x-text="selectedColor" class="text-neutral-500 font-normal ml-1"></span></h3>
+          <div class="flex items-center gap-2">
+            <template x-for="color in ['Black', 'Silver', 'Navy']">
+              <button @click="selectedColor = color"
+                      class="w-10 h-10 rounded-full border-2 focus:outline-none transition-all flex items-center justify-center relative"
+                      :class="selectedColor === color ? 'border-blue-600' : 'border-transparent hover:border-neutral-300'"
+                      :aria-label="'Select color ' + color">
+                <span class="w-8 h-8 rounded-full border border-black/10 block"
+                      :class="{
+                        'bg-neutral-900': color === 'Black',
+                        'bg-neutral-200': color === 'Silver',
+                        'bg-slate-700': color === 'Navy'
+                      }"></span>
+              </button>
+            </template>
+          </div>
+        </div>
+
+        <!-- Size Selection -->
+        <div>
+          <h3 class="text-sm font-medium text-neutral-900 mb-3">Size: <span x-text="selectedSize" class="text-neutral-500 font-normal ml-1"></span></h3>
+          <div class="flex items-center gap-2 flex-wrap">
+            <template x-for="size in ['S', 'M', 'L', 'XL']">
+              <button @click="selectedSize = size"
+                      class="px-4 py-2 border rounded-lg text-sm font-medium focus:outline-none transition-colors"
+                      :class="selectedSize === size ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'"
+                      x-text="size">
+              </button>
+            </template>
+          </div>
+        </div>
       </div>
 
       <!-- Description -->
-      <div class="prose prose-sm text-neutral-600 mb-8 border-t border-b border-neutral-200 py-6">
-        {% if product.description %}
-          {{ product.description|linebreaks }}
-        {% else %}
-          <p class="text-neutral-500 italic">No description available.</p>
-        {% endif %}
+      {% if product.description %}
+      <div class="card-padded text-sm text-neutral-600 leading-relaxed prose-sm max-w-none">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-3">About this product</h2>
+        {{ product.description|linebreaks }}
       </div>
+      {% endif %}
 
-      <!-- Action Buttons -->
+      <!-- Actions -->
       <div class="flex flex-col gap-3">
         {% if product.in_stock and product.stock > 0 %}
-          <a href="{% url 'cartAdd' product.id %}" class="w-full flex items-center justify-center gap-2 py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-            <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+          <a href="{% url 'cartAdd' product.id %}"
+             class="btn-primary-lg w-full justify-center">
+            <i data-lucide="shopping-cart" class="w-5 h-5"></i>
             Add to Cart
           </a>
         {% else %}
-          <button disabled class="w-full flex items-center justify-center gap-2 py-3 px-6 bg-neutral-100 text-neutral-400 border border-neutral-200 rounded-lg font-medium cursor-not-allowed">
-            <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+          <button disabled class="btn-primary-lg w-full justify-center opacity-40 cursor-not-allowed">
+            <i data-lucide="shopping-cart" class="w-5 h-5"></i>
             Out of Stock
           </button>
         {% endif %}
+
+        <div class="grid grid-cols-2 gap-3">
+          <a href="{% url 'toggle_wishlist' product.id %}" class="btn-secondary w-full justify-center {% if product.id in wishlist_product_ids %}text-red-600 border-red-200 bg-red-50 hover:bg-red-100{% endif %}">
+            <i data-lucide="heart" class="w-4 h-4 {% if product.id in wishlist_product_ids %}fill-red-600 text-red-600{% else %}text-neutral-400{% endif %}"></i>
+            {% if product.id in wishlist_product_ids %}Saved{% else %}Save{% endif %}
+          </a>
+          
+          <a href="{{ product.category.get_url }}" class="btn-secondary w-full justify-center">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            Back
+          </a>
+        </div>
       </div>
-      
+
+      <!-- Trust signals -->
+      <div class="grid grid-cols-2 gap-3 pt-2">
+        <div class="flex items-center gap-2 text-xs text-neutral-500">
+          <i data-lucide="shield-check" class="w-4 h-4 text-neutral-400 flex-shrink-0"></i>
+          Secure checkout
+        </div>
+        <div class="flex items-center gap-2 text-xs text-neutral-500">
+          <i data-lucide="rotate-ccw" class="w-4 h-4 text-neutral-400 flex-shrink-0"></i>
+          Easy returns
+        </div>
+        <div class="flex items-center gap-2 text-xs text-neutral-500">
+          <i data-lucide="truck" class="w-4 h-4 text-neutral-400 flex-shrink-0"></i>
+          Fast delivery
+        </div>
+        <div class="flex items-center gap-2 text-xs text-neutral-500">
+          <i data-lucide="headphones" class="w-4 h-4 text-neutral-400 flex-shrink-0"></i>
+          24/7 support
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Mobile Sticky Purchase Bar -->
+  <div x-data="{ showSticky: false }" 
+       @scroll.window="showSticky = (window.pageYOffset > 500)"
+       x-show="showSticky"
+       x-transition.opacity.duration.300ms
+       class="fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 p-4 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-40 lg:hidden flex items-center justify-between gap-4"
+       style="display: none;">
+    
+    <div class="flex flex-col overflow-hidden">
+      <span class="text-sm font-semibold text-neutral-900 truncate">{{ product.name }}</span>
+      <span class="text-sm font-bold text-blue-600">₹{{ product.price }}</span>
+    </div>
+    
+    <div class="flex-shrink-0">
+      {% if product.in_stock and product.stock > 0 %}
+        <a href="{% url 'cartAdd' product.id %}" class="btn-primary">
+          Add to Cart
+        </a>
+      {% else %}
+        <button disabled class="btn-primary opacity-40 cursor-not-allowed">
+          Out of Stock
+        </button>
+      {% endif %}
     </div>
   </div>
 
