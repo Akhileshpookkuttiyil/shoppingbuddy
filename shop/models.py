@@ -40,3 +40,18 @@ class Product(models.Model):
 
     def get_url(self):
         return reverse('product_detail', args=[self.category.slug, self.slug])
+
+class Wishlist(models.Model):
+    """Stores products saved by users for later."""
+    user = models.ForeignKey('auth.User', related_name='wishlist', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, related_name='wishlisted_by', on_delete=models.CASCADE)
+    added_date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'wishlist item'
+        verbose_name_plural = 'wishlist items'
+        unique_together = ('user', 'product')
+        ordering = ('-added_date',)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.product.name}"

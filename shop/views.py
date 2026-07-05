@@ -61,3 +61,30 @@ def detail(request, c_slug, p_slug):
     """Render the detailed view for a single product."""
     product = get_object_or_404(Product.objects.select_related('category'), category__slug=c_slug, slug=p_slug, in_stock=True)
     return render(request, 'detail.html', {'product': product})
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
+from django.contrib import messages
+from .models import Wishlist
+
+@login_required
+def toggle_wishlist(request, product_id):
+    """Toggle a product in the user's wishlist."""
+    product = get_object_or_404(Product, id=product_id)
+    wishlist_item, created = Wishlist.objects.get_or_create(user=request.user, product=product)
+    
+    if not created:
+        wishlist_item.delete()
+        messages.info(request, f'Removed {product.name} from your wishlist.')
+    else:
+        messages.success(request, f'Added {product.name} to your wishlist.')
+        
+    return redirect(request.META.get('HTTP_REFERER', '/'))
+
+@login_required
+def wishlist_view(request):
+    """Render the user's wishlist."""
+    wishlist_items = Wishlist.objects.filter(user=request.user).select_related('product', 'product__category')
+    return render(request, 'wishlist.html', {
+        'wishlist_items': wishlist_items
+    })

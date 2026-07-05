@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Your Wishlist - ShoppingBuddy{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-8">
+  
+  <div class="flex items-center justify-between border-b border-neutral-200 pb-4">
+    <h1 class="text-2xl font-semibold text-neutral-900">Your Wishlist</h1>
+    {% if wishlist_count %}
+      <span class="text-neutral-500 font-medium text-sm">
+        {{ wishlist_count }} item{{ wishlist_count|pluralize }}
+      </span>
+    {% endif %}
+  </div>
+
+  {% if not wishlist_items %}
+    <!-- Empty State -->
+    <div class="card-padded flex flex-col items-center justify-center text-center py-16">
+      <div class="mb-4 text-neutral-300">
+        <i data-lucide="heart" class="w-12 h-12"></i>
+      </div>
+      <h2 class="text-lg font-semibold text-neutral-900 mb-2">Your wishlist is empty</h2>
+      <p class="text-neutral-500 max-w-sm mx-auto mb-6 text-sm">
+        Save items you love here and purchase them when you're ready.
+      </p>
+      <a href="/" class="btn-primary">
+        Explore Products
+      </a>
+    </div>
+  {% else %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {% for item in wishlist_items %}
+        <!-- Inline Wishlist Card -->
+        <article class="card-hover group flex flex-col overflow-hidden h-full relative">
+          
+          <a href="{% url 'toggle_wishlist' item.product.id %}" class="absolute top-3 right-3 z-20 p-1.5 bg-white/80 backdrop-blur rounded-full text-red-500 hover:text-red-600 hover:bg-red-50 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Remove from wishlist">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </a>
+
+          <a href="{{ item.product.get_url }}" class="relative block w-full aspect-square bg-neutral-50 overflow-hidden focus:outline-none">
+            {% if item.product.image %}
+              <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" loading="lazy" class="absolute inset-0 w-full h-full object-contain p-5 transition-transform duration-300 group-hover:scale-[1.04]">
+            {% else %}
+              <div class="absolute inset-0 flex flex-col items-center justify-center text-neutral-300">
+                <i data-lucide="image" class="w-8 h-8 mb-1.5"></i>
+              </div>
+            {% endif %}
+            
+            {% if not item.product.in_stock or item.product.stock <= 0 %}
+              <span class="badge badge-neutral absolute top-3 left-3 z-10">Out of stock</span>
+            {% endif %}
+          </a>
+
+          <div class="flex flex-col flex-grow p-4 border-t border-neutral-100">
+            <a href="{{ item.product.category.get_url }}" class="text-xs font-medium text-neutral-400 hover:text-blue-600 transition-colors mb-1">
+              {{ item.product.category.name|default:item.product.category }}
+            </a>
+            <a href="{{ item.product.get_url }}" class="group/title block mb-3">
+              <h3 class="text-sm font-semibold text-neutral-800 leading-snug line-clamp-2 group-hover/title:text-blue-600 transition-colors">
+                {{ item.product.name }}
+              </h3>
+            </a>
+            <div class="mt-auto flex items-center justify-between gap-2">
+              <span class="text-base font-bold text-neutral-900">₹{{ item.product.price }}</span>
+              
+              {% if item.product.in_stock and item.product.stock > 0 %}
+                <a href="{% url 'cartAdd' item.product.id %}" class="btn-primary btn-sm rounded-md px-3">
+                  <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i>
+                  Move to Cart
+                </a>
+              {% else %}
+                <button disabled class="btn-sm rounded-md px-3 bg-neutral-100 text-neutral-400 cursor-not-allowed">
+                  Out of Stock
+                </button>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
