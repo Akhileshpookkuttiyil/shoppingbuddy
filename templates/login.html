@@ -1,90 +1,179 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Login - ShoppingBuddy{% endblock %}
+{% block title %}Sign In - ShoppingBuddy{% endblock %}
 
 {% block content %}
-<div class="flex items-center justify-center min-h-[60vh]">
+<div class="flex items-center justify-center min-h-[75vh] w-full" x-data="{ showPassword: false, isLoading: false }">
   
-  <div class="w-full max-w-md bg-white border border-neutral-200 rounded-lg shadow-sm p-8 sm:p-10">
+  <!-- Main Auth Container: Split Pane -->
+  <div class="w-full max-w-5xl bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-neutral-100 flex overflow-hidden min-h-[600px]">
     
-    <div class="mb-8 text-center">
-      <h1 class="text-2xl font-semibold text-neutral-900 mb-2">Welcome back</h1>
-      <p class="text-neutral-500 text-sm">Please enter your details to sign in.</p>
-    </div>
-
-    {% if form.non_field_errors %}
-      <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-        <i data-lucide="alert-circle" class="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0"></i>
-        <div class="flex flex-col">
-          {% for error in form.non_field_errors %}
-            <span class="text-sm font-medium text-red-700">{{ error }}</span>
-          {% endfor %}
-        </div>
-      </div>
-    {% endif %}
-
-    <form method="post" action="{% url 'login' %}" class="space-y-5" id="auth-form">
-      {% csrf_token %}
+    <!-- Left Visual Section (45%) -->
+    <div class="hidden lg:flex flex-col relative w-[45%] bg-neutral-900 overflow-hidden p-12">
+      <!-- Subtle Radial Gradients -->
+      <div class="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-900/40 via-neutral-900 to-neutral-900 pointer-events-none"></div>
       
-      <div class="space-y-4">
-        <!-- Username Field -->
-        <div class="flex flex-col gap-1.5">
-          <label for="{{ form.username.id_for_label }}" class="text-sm font-medium text-neutral-700">Username</label>
-          <div class="relative">
-            {{ form.username }}
+      <!-- Brand & Copy -->
+      <div class="relative z-10 flex flex-col gap-4 mb-auto">
+        <div class="flex items-center gap-2 text-white">
+          <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-900/50">
+            <i data-lucide="shopping-bag" class="w-4 h-4"></i>
           </div>
-          {% if form.username.errors %}
-            <div class="text-sm font-medium text-red-500 flex items-center gap-1.5 mt-1">
-              <i data-lucide="alert-circle" class="w-4 h-4"></i>
-              {{ form.username.errors|striptags }}
-            </div>
-          {% endif %}
+          <span class="font-bold text-lg tracking-tight">ShoppingBuddy</span>
         </div>
-        
-        <!-- Password Field -->
-        <div class="flex flex-col gap-1.5">
-          <label for="{{ form.password.id_for_label }}" class="text-sm font-medium text-neutral-700">Password</label>
-          <div class="relative">
-            {{ form.password }}
-          </div>
-          {% if form.password.errors %}
-            <div class="text-sm font-medium text-red-500 flex items-center gap-1.5 mt-1">
-              <i data-lucide="alert-circle" class="w-4 h-4"></i>
-              {{ form.password.errors|striptags }}
-            </div>
-          {% endif %}
-        </div>
+        <h2 class="text-3xl font-semibold text-white leading-tight mt-6">
+          Your premium shopping <br>experience awaits.
+        </h2>
+        <p class="text-neutral-400 text-sm max-w-sm leading-relaxed">
+          Discover a curated selection of the finest products, seamlessly delivered to your door.
+        </p>
       </div>
 
-      <button type="submit" class="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mt-6">
-        Sign In
-      </button>
-    </form>
-
-    <div class="mt-8 pt-6 border-t border-neutral-100 flex flex-col items-center gap-4">
-      <p class="text-neutral-500 text-sm">
-        Don't have an account? 
-        <a href="{% url 'register' %}" class="text-blue-600 font-medium hover:text-blue-700 hover:underline transition-colors focus:outline-none">Sign up</a>
-      </p>
+      <!-- CSS Abstract Dashboard Mockup -->
+      <div class="relative z-10 w-[140%] h-[300px] mt-12 rotate-[-5deg] origin-bottom-left transition-transform duration-700 hover:rotate-[-2deg]">
+        <div class="absolute inset-0 bg-neutral-800/50 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl overflow-hidden p-4 flex flex-col gap-3">
+          <!-- Mock Navbar -->
+          <div class="flex items-center gap-3 border-b border-white/5 pb-3">
+            <div class="w-6 h-6 rounded-full bg-white/10"></div>
+            <div class="w-24 h-2 bg-white/10 rounded-full"></div>
+            <div class="w-8 h-2 bg-white/10 rounded-full ml-auto"></div>
+          </div>
+          <!-- Mock Content -->
+          <div class="flex gap-3 h-full">
+            <div class="w-1/3 h-full rounded-xl bg-white/5"></div>
+            <div class="w-2/3 h-full flex flex-col gap-3">
+              <div class="w-full h-1/2 rounded-xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-white/5"></div>
+              <div class="flex gap-3 h-1/2">
+                <div class="w-1/2 h-full rounded-xl bg-white/5"></div>
+                <div class="w-1/2 h-full rounded-xl bg-white/5"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    
-  </div>
 
+    <!-- Right Form Section (55%) -->
+    <div class="w-full lg:w-[55%] flex flex-col justify-center p-8 sm:p-12 lg:p-16 relative">
+      
+      <div class="max-w-[400px] w-full mx-auto flex flex-col">
+        
+        <!-- Mobile Logo (hidden on desktop) -->
+        <div class="flex lg:hidden items-center gap-2 mb-8 text-neutral-900">
+          <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <i data-lucide="shopping-bag" class="text-white w-4 h-4"></i>
+          </div>
+          <span class="font-bold text-lg tracking-tight">ShoppingBuddy</span>
+        </div>
+
+        <div class="mb-8">
+          <h1 class="text-2xl sm:text-3xl font-semibold text-neutral-900 mb-2 tracking-tight">Welcome Back</h1>
+          <p class="text-neutral-500 text-sm">Sign in to continue using your account.</p>
+        </div>
+
+        {% if form.non_field_errors %}
+          <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+            <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0"></i>
+            <div class="flex flex-col">
+              {% for error in form.non_field_errors %}
+                <span class="text-sm font-medium text-red-700">{{ error }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'login' %}" class="flex flex-col gap-5" id="auth-form" @submit="isLoading = true">
+          {% csrf_token %}
+          
+          <!-- Username Field -->
+          <div class="flex flex-col gap-1.5 group">
+            <label for="{{ form.username.id_for_label }}" class="text-sm font-medium text-neutral-700 group-focus-within:text-blue-600 transition-colors">Username</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400 group-focus-within:text-blue-600 transition-colors">
+                <i data-lucide="user" class="w-4 h-4"></i>
+              </div>
+              {{ form.username }}
+            </div>
+            {% if form.username.errors %}
+              <div class="text-sm font-medium text-red-500 flex items-center gap-1.5 mt-1 animate-in fade-in">
+                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                {{ form.username.errors|striptags }}
+              </div>
+            {% endif %}
+          </div>
+          
+          <!-- Password Field -->
+          <div class="flex flex-col gap-1.5 group">
+            <label for="{{ form.password.id_for_label }}" class="text-sm font-medium text-neutral-700 group-focus-within:text-blue-600 transition-colors">Password</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400 group-focus-within:text-blue-600 transition-colors">
+                <i data-lucide="lock" class="w-4 h-4"></i>
+              </div>
+              {{ form.password }}
+              <button type="button" 
+                      @click="showPassword = !showPassword; $refs.passInput.type = showPassword ? 'text' : 'password'" 
+                      class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-neutral-400 hover:text-neutral-600 focus:outline-none transition-colors"
+                      title="Toggle password visibility">
+                <i data-lucide="eye" class="w-4 h-4" x-show="!showPassword"></i>
+                <i data-lucide="eye-off" class="w-4 h-4" x-show="showPassword" style="display: none;"></i>
+              </button>
+            </div>
+            {% if form.password.errors %}
+              <div class="text-sm font-medium text-red-500 flex items-center gap-1.5 mt-1 animate-in fade-in">
+                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                {{ form.password.errors|striptags }}
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Extra Actions -->
+          <div class="flex items-center justify-between mt-1">
+            <label class="flex items-center gap-2 cursor-pointer group">
+              <input type="checkbox" class="w-4 h-4 text-blue-600 border-neutral-300 rounded focus:ring-blue-500 transition-colors cursor-pointer">
+              <span class="text-sm text-neutral-600 group-hover:text-neutral-900 transition-colors">Remember me</span>
+            </label>
+            <a href="#" class="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1">
+              Forgot Password?
+            </a>
+          </div>
+
+          <button type="submit" class="btn-primary w-full justify-center mt-2 py-3 relative overflow-hidden group" :disabled="isLoading">
+            <span :class="{'opacity-0': isLoading}" class="flex items-center gap-2 transition-opacity">
+              Sign In
+              <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+            </span>
+            <span x-show="isLoading" class="absolute inset-0 flex items-center justify-center" style="display: none;">
+              <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>
+            </span>
+          </button>
+        </form>
+
+        <div class="mt-8 text-center">
+          <p class="text-neutral-500 text-sm">
+            Don't have an account? 
+            <a href="{% url 'register' %}" class="text-blue-600 font-semibold hover:text-blue-700 hover:underline transition-colors focus:outline-none px-1 rounded focus:ring-2 focus:ring-blue-500">
+              Create Account
+            </a>
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    // Automatically inject Tailwind classes into the Django rendered inputs
     const form = document.getElementById('auth-form');
     if (form) {
-      form.querySelectorAll('input:not([type="hidden"]):not([type="submit"])').forEach(input => {
-        input.classList.add(
-          'w-full', 'px-3', 'py-2', 'rounded-lg', 'border', 'border-neutral-300', 
-          'bg-white', 'text-neutral-900', 'text-sm', 'placeholder-neutral-400',
-          'focus:outline-none', 'focus:ring-1', 'focus:ring-blue-500', 'focus:border-blue-500', 
-          'transition-all'
-        );
+      // Add standard form classes and padding for icons
+      form.querySelectorAll('input:not([type="checkbox"]):not([type="hidden"]):not([type="submit"])').forEach(el => {
+        el.classList.add('form-input', 'pl-10');
+        // If it's a password field, hook it up to alpine ref
+        if(el.type === 'password' || el.name.toLowerCase().includes('password')) {
+            el.setAttribute('x-ref', 'passInput');
+        }
       });
     }
   });
