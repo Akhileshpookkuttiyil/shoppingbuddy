@@ -36,8 +36,8 @@
   {% endblock %}
 
   <!-- Global Toast Container -->
-  <div x-data="{ toasts: $store.toasts.list }" class="fixed top-20 right-4 z-50 flex flex-col gap-2 w-full max-w-sm pointer-events-none" aria-live="polite">
-    <template x-for="toast in toasts" :key="toast.id">
+  <div x-data class="fixed top-20 right-4 z-50 flex flex-col gap-2 w-full max-w-sm pointer-events-none" aria-live="polite">
+    <template x-for="toast in $store.toasts.list" :key="toast.id">
       <div x-show="true" x-transition.opacity.duration.300ms 
            class="pointer-events-auto flex items-start gap-3 p-4 rounded-lg bg-white border border-neutral-200 shadow-sm" role="alert">
         
