@@ -8,230 +8,269 @@
 
 {% block content_wrapper %}
 <style>
-  .auth-shell {
-    height: 100dvh;
-    width: 100vw;
+  .sp-bg {
+    position: fixed;
+    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 50%, #f0fdf4 100%);
+    padding: 1.5rem;
     overflow: hidden;
-    margin: 0;
-    padding: 0;
-    background-color: #f8fafc; /* bg-neutral-50 */
+    z-index: 10;
   }
-  .auth-container {
-    transform-origin: center center;
-    transition: transform 0.2s ease;
+
+  /* decorative blobs */
+  .sp-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.35;
+    pointer-events: none;
   }
-  @media (max-height: 1050px) {
-    .auth-container { transform: scale(0.90); }
+  .sp-blob-1 {
+    width: 400px; height: 400px;
+    background: #bfdbfe;
+    top: -100px; left: -100px;
   }
-  @media (max-height: 950px) {
-    .auth-container { transform: scale(0.85); }
+  .sp-blob-2 {
+    width: 300px; height: 300px;
+    background: #ddd6fe;
+    bottom: -80px; right: -80px;
   }
-  @media (max-height: 850px) {
-    .auth-container { transform: scale(0.75); }
+
+  .sp-card {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    background: #ffffff;
+    border-radius: 24px;
+    box-shadow: 0 24px 48px -8px rgba(15,23,42,0.14), 0 0 0 1px rgba(15,23,42,0.05);
+    overflow: hidden;
   }
-  @media (max-height: 750px) {
-    .auth-container { transform: scale(0.65); }
+
+  .sp-stripe {
+    height: 4px;
+    background: linear-gradient(90deg, #2563eb 0%, #7c3aed 50%, #0ea5e9 100%);
   }
-  @media (max-height: 650px) {
-    .auth-container { transform: scale(0.55); }
+
+  .sp-body { padding: 2.25rem 2rem 2rem; }
+
+  .sp-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    margin-bottom: 2rem;
+    text-decoration: none;
   }
-  @media (max-height: 550px) {
-    .auth-container { transform: scale(0.45); }
+  .sp-brand-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(37,99,235,0.35);
   }
+  .sp-brand-name {
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+  }
+
+  .sp-heading { margin-bottom: 1.5rem; }
+  .sp-heading h1 {
+    font-size: 1.625rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.025em;
+    margin-bottom: 0.3rem;
+  }
+  .sp-heading p { font-size: 0.875rem; color: #64748b; }
+
+  .sp-field {
+    position: relative;
+    margin-bottom: 0.875rem;
+  }
+  .sp-field-icon {
+    position: absolute;
+    left: 0.875rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    pointer-events: none;
+    width: 16px; height: 16px;
+  }
+  .sp-input {
+    width: 100%;
+    height: 46px;
+    border-radius: 12px;
+    border: 1.5px solid #e2e8f0;
+    background: #f8fafc;
+    padding: 0 1rem 0 2.75rem;
+    font-size: 0.9rem;
+    color: #0f172a;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+    font-family: inherit;
+  }
+  .sp-input::placeholder { color: #94a3b8; }
+  .sp-input:focus {
+    outline: none;
+    border-color: #2563eb;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+  }
+
+  .sp-field-err {
+    font-size: 0.775rem;
+    color: #ef4444;
+    margin-top: 0.3rem;
+    margin-left: 0.25rem;
+  }
+
+  .sp-alert {
+    background: #fef2f2;
+    color: #991b1b;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    font-size: 0.825rem;
+    border: 1px solid #fca5a5;
+  }
+
+  .sp-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+  .sp-check-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: #475569;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .sp-check-label input[type="checkbox"] {
+    width: 15px; height: 15px;
+    accent-color: #2563eb;
+    cursor: pointer;
+  }
+  .sp-forgot {
+    font-size: 0.8rem;
+    color: #2563eb;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .sp-forgot:hover { text-decoration: underline; }
+
+  .sp-btn {
+    width: 100%;
+    height: 46px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.01em;
+    box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+    font-family: inherit;
+  }
+  .sp-btn:hover {
+    background: linear-gradient(135deg, #1e40af, #1d4ed8);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(37,99,235,0.38);
+  }
+
+  .sp-switch {
+    text-align: center;
+    font-size: 0.825rem;
+    color: #64748b;
+    margin-top: 1.25rem;
+    padding-top: 1.125rem;
+    border-top: 1px solid #f1f5f9;
+  }
+  .sp-switch a {
+    color: #2563eb;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .sp-switch a:hover { text-decoration: underline; }
 </style>
 
-<div class="auth-shell" x-data="{ showPassword: false, isLoading: false }">
-  
-  <!-- Main Auth Container: Split Pane -->
-  <div class="auth-container w-full max-w-6xl bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-neutral-100 flex overflow-hidden min-h-[600px]">
-    
-    <!-- Left Visual Section (45%) -->
-    <div class="hidden lg:flex flex-col relative w-[45%] bg-neutral-900 overflow-hidden p-12">
-      <!-- Subtle Radial Gradients -->
-      <div class="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-900/40 via-neutral-900 to-neutral-900 pointer-events-none"></div>
-      
-      <!-- Brand & Copy -->
-      <div class="relative z-10 flex flex-col gap-4 mb-auto">
-        <div class="flex items-center gap-2 text-white">
-          <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-900/50">
-            <i data-lucide="shopping-bag" class="w-4 h-4"></i>
-          </div>
-          <span class="font-bold text-lg tracking-tight">ShoppingBuddy</span>
-        </div>
-        <h2 class="text-3xl font-semibold text-white leading-tight mt-6">
-          Your premium shopping <br>experience awaits.
-        </h2>
-        <p class="text-neutral-400 text-sm max-w-sm leading-relaxed">
-          Discover a curated selection of the finest products, seamlessly delivered to your door.
-        </p>
-      </div>
+<div class="sp-bg">
+  <div class="sp-blob sp-blob-1"></div>
+  <div class="sp-blob sp-blob-2"></div>
 
-      <!-- CSS Abstract Dashboard Mockup -->
-      <div class="relative z-10 w-[140%] h-[300px] mt-12 rotate-[-5deg] origin-bottom-left transition-transform duration-700 hover:rotate-[-2deg]">
-        <div class="absolute inset-0 bg-neutral-800/50 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl overflow-hidden p-4 flex flex-col gap-3">
-          <!-- Mock Navbar -->
-          <div class="flex items-center gap-3 border-b border-white/5 pb-3">
-            <div class="w-6 h-6 rounded-full bg-white/10"></div>
-            <div class="w-24 h-2 bg-white/10 rounded-full"></div>
-            <div class="w-8 h-2 bg-white/10 rounded-full ml-auto"></div>
-          </div>
-          <!-- Mock Content -->
-          <div class="flex gap-3 h-full">
-            <div class="w-1/3 h-full rounded-xl bg-white/5"></div>
-            <div class="w-2/3 h-full flex flex-col gap-3">
-              <div class="w-full h-1/2 rounded-xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-white/5"></div>
-              <div class="flex gap-3 h-1/2">
-                <div class="w-1/2 h-full rounded-xl bg-white/5"></div>
-                <div class="w-1/2 h-full rounded-xl bg-white/5"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+  <div class="sp-card">
+    <div class="sp-stripe"></div>
+    <div class="sp-body">
 
-    <!-- Right Form Section (55%) -->
-    <div class="w-full lg:w-[55%] flex flex-col justify-center p-8 sm:p-12 lg:p-16 relative">
-      
-      <!-- Back Button -->
-      <a href="{% url 'home' %}" class="absolute top-6 left-6 sm:top-8 sm:left-8 flex items-center gap-2 text-neutral-500 hover:text-neutral-900 transition-colors group text-sm font-medium z-10">
-        <div class="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center group-hover:bg-neutral-200 transition-colors">
-          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+      <a href="{% url 'home' %}" class="sp-brand">
+        <div class="sp-brand-icon">
+          <i data-lucide="shopping-bag" style="color:white;width:18px;height:18px;"></i>
         </div>
-        <span class="hidden sm:inline">Back to Home</span>
+        <span class="sp-brand-name">ShoppingBuddy</span>
       </a>
 
-      <div class="max-w-[400px] w-full mx-auto flex flex-col">
-        
-        <!-- Mobile Logo (hidden on desktop) -->
-        <div class="flex lg:hidden items-center gap-2 mb-8 text-neutral-900">
-          <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <i data-lucide="shopping-bag" class="text-white w-4 h-4"></i>
-          </div>
-          <span class="font-bold text-lg tracking-tight">ShoppingBuddy</span>
+      <div class="sp-heading">
+        <h1>Welcome back 👋</h1>
+        <p>Sign in to your ShoppingBuddy account.</p>
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="sp-alert">
+          {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+
+        <div class="sp-field">
+          <input type="text" name="username" id="id_username" required
+                 placeholder="Email or Username"
+                 class="sp-input"
+                 value="{{ form.username.value|default:'' }}">
+          <i data-lucide="user" class="sp-field-icon"></i>
+          {% if form.username.errors %}
+            <div class="sp-field-err">{{ form.username.errors|striptags }}</div>
+          {% endif %}
         </div>
 
-        <div class="mb-8">
-          <h1 class="text-2xl sm:text-3xl font-semibold text-neutral-900 mb-2 tracking-tight">Welcome Back</h1>
-          <p class="text-neutral-500 text-sm">Sign in to continue using your account.</p>
+        <div class="sp-field">
+          <input type="password" name="password" id="id_password" required
+                 placeholder="Password"
+                 class="sp-input">
+          <i data-lucide="lock" class="sp-field-icon"></i>
+          {% if form.password.errors %}
+            <div class="sp-field-err">{{ form.password.errors|striptags }}</div>
+          {% endif %}
         </div>
 
-        {% if form.non_field_errors %}
-          <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-            <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0"></i>
-            <div class="flex flex-col">
-              {% for error in form.non_field_errors %}
-                <span class="text-sm font-medium text-red-700">{{ error }}</span>
-              {% endfor %}
-            </div>
-          </div>
-        {% endif %}
-
-        <form method="post" action="{% url 'login' %}" class="flex flex-col gap-5" id="auth-form" @submit="isLoading = true">
-          {% csrf_token %}
-          
-          <!-- Username Field -->
-          <div class="flex flex-col gap-1.5 group">
-            <label for="{{ form.username.id_for_label }}" class="text-sm font-medium text-neutral-700 group-focus-within:text-blue-600 transition-colors">Username</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400 group-focus-within:text-blue-600 transition-colors">
-                <i data-lucide="user" class="w-4 h-4"></i>
-              </div>
-              {{ form.username }}
-            </div>
-            {% if form.username.errors %}
-              <div class="text-sm font-medium text-red-500 flex items-center gap-1.5 mt-1 animate-in fade-in">
-                <i data-lucide="alert-circle" class="w-4 h-4"></i>
-                {{ form.username.errors|striptags }}
-              </div>
-            {% endif %}
-          </div>
-          
-          <!-- Password Field -->
-          <div class="flex flex-col gap-1.5 group">
-            <label for="{{ form.password.id_for_label }}" class="text-sm font-medium text-neutral-700 group-focus-within:text-blue-600 transition-colors">Password</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400 group-focus-within:text-blue-600 transition-colors">
-                <i data-lucide="lock" class="w-4 h-4"></i>
-              </div>
-              {{ form.password }}
-              <button type="button" 
-                      @click="showPassword = !showPassword; $refs.passInput.type = showPassword ? 'text' : 'password'" 
-                      class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-neutral-400 hover:text-neutral-600 focus:outline-none transition-colors"
-                      title="Toggle password visibility">
-                <i data-lucide="eye" class="w-4 h-4" x-show="!showPassword"></i>
-                <i data-lucide="eye-off" class="w-4 h-4" x-show="showPassword" style="display: none;"></i>
-              </button>
-            </div>
-            {% if form.password.errors %}
-              <div class="text-sm font-medium text-red-500 flex items-center gap-1.5 mt-1 animate-in fade-in">
-                <i data-lucide="alert-circle" class="w-4 h-4"></i>
-                {{ form.password.errors|striptags }}
-              </div>
-            {% endif %}
-          </div>
-
-          <!-- Extra Actions -->
-          <div class="flex items-center justify-between mt-1">
-            <label class="flex items-center gap-2 cursor-pointer group">
-              <input type="checkbox" class="w-4 h-4 text-blue-600 border-neutral-300 rounded focus:ring-blue-500 transition-colors cursor-pointer">
-              <span class="text-sm text-neutral-600 group-hover:text-neutral-900 transition-colors">Remember me</span>
-            </label>
-            <a href="#" class="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1">
-              Forgot Password?
-            </a>
-          </div>
-
-          <button type="submit" class="btn-primary w-full justify-center mt-2 py-3 relative overflow-hidden group" :disabled="isLoading">
-            <span :class="{'opacity-0': isLoading}" class="flex items-center gap-2 transition-opacity">
-              Sign In
-              <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
-            </span>
-            <span x-show="isLoading" class="absolute inset-0 flex items-center justify-center" style="display: none;">
-              <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>
-            </span>
-          </button>
-        </form>
-
-        <div class="mt-8 text-center">
-          <p class="text-neutral-500 text-sm">
-            Don't have an account? 
-            <a href="{% url 'register' %}" class="text-blue-600 font-semibold hover:text-blue-700 hover:underline transition-colors focus:outline-none px-1 rounded focus:ring-2 focus:ring-blue-500">
-              Create Account
-            </a>
-          </p>
+        <div class="sp-meta">
+          <label class="sp-check-label">
+            <input type="checkbox" name="remember">
+            Remember me
+          </label>
+          <a href="#" class="sp-forgot">Forgot password?</a>
         </div>
 
+        <button type="submit" class="sp-btn">Sign In</button>
+      </form>
+
+      <div class="sp-switch">
+        New to ShoppingBuddy? <a href="{% url 'register' %}">Create a free account</a>
       </div>
     </div>
   </div>
 </div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('auth-form');
-    if (form) {
-      // Add standard form classes and padding for icons
-      form.querySelectorAll('input:not([type="checkbox"]):not([type="hidden"]):not([type="submit"])').forEach(el => {
-        el.classList.add('form-input', 'pl-10');
-        
-        // Add placeholder based on label
-        if (!el.getAttribute('placeholder')) {
-          const label = document.querySelector(`label[for="${el.id}"]`);
-          if (label) {
-            el.setAttribute('placeholder', `Enter your ${label.innerText.trim().toLowerCase()}`);
-          }
-        }
-
-        // If it's a password field, hook it up to alpine ref
-        if(el.type === 'password' || el.name.toLowerCase().includes('password')) {
-            el.setAttribute('x-ref', 'passInput');
-        }
-      });
-    }
-  });
-</script>
 {% endblock %}

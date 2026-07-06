@@ -8,293 +8,304 @@
 
 {% block content_wrapper %}
 <style>
-  .auth-shell {
-    height: 100dvh;
-    width: 100vw;
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  .sp-bg {
+    position: fixed;
+    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 50%, #faf5ff 100%);
+    z-index: 10;
+  }
+
+  .sp-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.3;
+    pointer-events: none;
+  }
+  .sp-blob-1 { width: 350px; height: 350px; background: #bfdbfe; top: -80px; left: -80px; }
+  .sp-blob-2 { width: 280px; height: 280px; background: #ddd6fe; bottom: -60px; right: -60px; }
+
+  .sp-card {
+    position: relative;
+    width: calc(100% - 3rem);
+    max-width: 420px;
+    max-height: calc(100vh - 3rem);
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px -8px rgba(15,23,42,0.14), 0 0 0 1px rgba(15,23,42,0.05);
     overflow: hidden;
-    margin: 0;
-    padding: 0;
-    background-color: #f8fafc; /* bg-neutral-50 */
+    display: flex;
+    flex-direction: column;
   }
-  .auth-container {
-    transform-origin: center center;
-    transition: transform 0.2s ease;
+
+  .sp-stripe {
+    flex-shrink: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #2563eb 0%, #7c3aed 50%, #0ea5e9 100%);
   }
-  @media (max-height: 1050px) {
-    .auth-container { transform: scale(0.90); }
+
+  .sp-body {
+    flex: 1;
+    padding: 1.25rem 1.75rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 0;
+    min-height: 0;
   }
-  @media (max-height: 950px) {
-    .auth-container { transform: scale(0.85); }
+
+  .sp-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.875rem;
+    text-decoration: none;
+    flex-shrink: 0;
   }
-  @media (max-height: 850px) {
-    .auth-container { transform: scale(0.75); }
+  .sp-brand-icon {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 3px 8px rgba(37,99,235,0.35);
+    flex-shrink: 0;
   }
-  @media (max-height: 750px) {
-    .auth-container { transform: scale(0.65); }
+  .sp-brand-name {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
   }
-  @media (max-height: 650px) {
-    .auth-container { transform: scale(0.55); }
+
+  .sp-heading {
+    margin-bottom: 0.875rem;
+    flex-shrink: 0;
   }
-  @media (max-height: 550px) {
-    .auth-container { transform: scale(0.45); }
+  .sp-heading h1 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.025em;
+    margin-bottom: 0.125rem;
+  }
+  .sp-heading p { font-size: 0.8rem; color: #64748b; }
+
+  .sp-alert {
+    background: #fef2f2;
+    color: #991b1b;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    margin-bottom: 0.625rem;
+    font-size: 0.775rem;
+    border: 1px solid #fca5a5;
+    flex-shrink: 0;
+  }
+
+  .sp-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    flex-shrink: 0;
+  }
+  .sp-row .sp-field { margin-bottom: 0; }
+
+  .sp-field {
+    position: relative;
+    margin-bottom: 0.5rem;
+    flex-shrink: 0;
+  }
+  .sp-field-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    pointer-events: none;
+    width: 14px; height: 14px;
+  }
+  .sp-input {
+    width: 100%;
+    height: 38px;
+    border-radius: 10px;
+    border: 1.5px solid #e2e8f0;
+    background: #f8fafc;
+    padding: 0 0.75rem;
+    font-size: 0.825rem;
+    color: #0f172a;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    font-family: inherit;
+  }
+  .sp-input.with-icon { padding-left: 2.25rem; }
+  .sp-input::placeholder { color: #94a3b8; }
+  .sp-input:focus {
+    outline: none;
+    border-color: #2563eb;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+  }
+
+  .sp-field-err {
+    font-size: 0.7rem;
+    color: #ef4444;
+    margin-top: 0.2rem;
+    margin-left: 0.2rem;
+  }
+
+  .sp-terms {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 0.625rem;
+    flex-shrink: 0;
+  }
+  .sp-terms input[type="checkbox"] {
+    width: 13px; height: 13px;
+    accent-color: #2563eb;
+    cursor: pointer;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  .sp-terms-text { font-size: 0.73rem; color: #64748b; line-height: 1.4; }
+  .sp-terms-text a { color: #2563eb; font-weight: 600; text-decoration: none; }
+  .sp-terms-text a:hover { text-decoration: underline; }
+
+  .sp-btn {
+    width: 100%;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+    font-family: inherit;
+    flex-shrink: 0;
+  }
+  .sp-btn:hover {
+    background: linear-gradient(135deg, #1e40af, #1d4ed8);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(37,99,235,0.38);
+  }
+
+  .sp-switch {
+    text-align: center;
+    font-size: 0.775rem;
+    color: #64748b;
+    margin-top: 0.625rem;
+    padding-top: 0.625rem;
+    border-top: 1px solid #f1f5f9;
+    flex-shrink: 0;
+  }
+  .sp-switch a { color: #2563eb; font-weight: 700; text-decoration: none; }
+  .sp-switch a:hover { text-decoration: underline; }
+
+  @media (max-width: 480px) {
+    .sp-row { grid-template-columns: 1fr; }
   }
 </style>
 
-<div class="auth-shell" 
-     x-data="{ 
-       showPassword: false, 
-       isLoading: false,
-       password: '',
-       confirmPassword: '',
-       get hasMinLength() { return this.password.length >= 8; },
-       get hasUpper() { return /[A-Z]/.test(this.password); },
-       get hasNumber() { return /[0-9]/.test(this.password); },
-       get hasSpecial() { return /[^A-Za-z0-9]/.test(this.password); },
-       get passwordsMatch() { return this.password === this.confirmPassword && this.confirmPassword.length > 0; }
-     }">
-  
-  <!-- Main Auth Container: Split Pane -->
-  <div class="auth-container w-full max-w-6xl bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-neutral-100 flex overflow-hidden min-h-[650px]">
-    
-    <!-- Left Visual Section (45%) -->
-    <div class="hidden lg:flex flex-col relative w-[45%] bg-neutral-900 overflow-hidden p-12">
-      <!-- Subtle Radial Gradients -->
-      <div class="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-indigo-900/40 via-neutral-900 to-neutral-900 pointer-events-none"></div>
-      
-      <!-- Brand & Copy -->
-      <div class="relative z-10 flex flex-col gap-4 mb-auto">
-        <div class="flex items-center gap-2 text-white">
-          <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-900/50">
-            <i data-lucide="shopping-bag" class="w-4 h-4"></i>
-          </div>
-          <span class="font-bold text-lg tracking-tight">ShoppingBuddy</span>
-        </div>
-        <h2 class="text-3xl font-semibold text-white leading-tight mt-6">
-          Join the ultimate <br>shopping experience.
-        </h2>
-        <p class="text-neutral-400 text-sm max-w-sm leading-relaxed">
-          Create an account to track orders, save favorites, and access exclusive deals.
-        </p>
-      </div>
+<div class="sp-bg">
+  <div class="sp-blob sp-blob-1"></div>
+  <div class="sp-blob sp-blob-2"></div>
 
-      <!-- CSS Abstract Dashboard Mockup -->
-      <div class="relative z-10 w-[140%] h-[300px] mt-12 rotate-[-5deg] origin-bottom-left transition-transform duration-700 hover:rotate-[-2deg]">
-        <div class="absolute inset-0 bg-neutral-800/50 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl overflow-hidden p-4 flex flex-col gap-3">
-          <!-- Mock Header -->
-          <div class="flex items-center gap-3 border-b border-white/5 pb-3">
-            <div class="w-10 h-10 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center">
-              <i data-lucide="user" class="w-5 h-5 text-blue-400"></i>
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <div class="w-24 h-2 bg-white/20 rounded-full"></div>
-              <div class="w-16 h-1.5 bg-white/10 rounded-full"></div>
-            </div>
-          </div>
-          <!-- Mock Content -->
-          <div class="flex flex-col gap-3 h-full">
-            <div class="w-full h-1/3 rounded-xl bg-gradient-to-r from-blue-600/20 to-transparent border border-white/5"></div>
-            <div class="flex gap-3 h-2/3">
-              <div class="w-1/2 h-full rounded-xl bg-white/5"></div>
-              <div class="w-1/2 h-full rounded-xl bg-white/5"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+  <div class="sp-card">
+    <div class="sp-stripe"></div>
+    <div class="sp-body">
 
-    <!-- Right Form Section (55%) -->
-    <div class="w-full lg:w-[55%] flex flex-col justify-center p-8 sm:p-12 lg:p-16 relative">
-      
-      <!-- Back Button -->
-      <a href="{% url 'home' %}" class="absolute top-6 left-6 sm:top-8 sm:left-8 flex items-center gap-2 text-neutral-500 hover:text-neutral-900 transition-colors group text-sm font-medium z-10">
-        <div class="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center group-hover:bg-neutral-200 transition-colors">
-          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+      <a href="{% url 'home' %}" class="sp-brand">
+        <div class="sp-brand-icon">
+          <i data-lucide="shopping-bag" style="color:white;width:14px;height:14px;"></i>
         </div>
-        <span class="hidden sm:inline">Back to Home</span>
+        <span class="sp-brand-name">ShoppingBuddy</span>
       </a>
 
-      <div class="max-w-[400px] w-full mx-auto flex flex-col">
-        
-        <!-- Mobile Logo (hidden on desktop) -->
-        <div class="flex lg:hidden items-center gap-2 mb-8 text-neutral-900">
-          <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <i data-lucide="shopping-bag" class="text-white w-4 h-4"></i>
+      <div class="sp-heading">
+        <h1>Join ShoppingBuddy ✨</h1>
+        <p>Create your free account and start shopping.</p>
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="sp-alert">
+          {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post" action="{% url 'register' %}" style="display:contents;">
+        {% csrf_token %}
+
+        <div class="sp-row">
+          <div class="sp-field">
+            <input type="text" name="first_name" id="id_first_name" required
+                   placeholder="First Name" class="sp-input"
+                   value="{{ form.first_name.value|default:'' }}">
+            {% if form.first_name.errors %}
+              <div class="sp-field-err">{{ form.first_name.errors|striptags }}</div>
+            {% endif %}
           </div>
-          <span class="font-bold text-lg tracking-tight">ShoppingBuddy</span>
+          <div class="sp-field">
+            <input type="text" name="last_name" id="id_last_name" required
+                   placeholder="Last Name" class="sp-input"
+                   value="{{ form.last_name.value|default:'' }}">
+            {% if form.last_name.errors %}
+              <div class="sp-field-err">{{ form.last_name.errors|striptags }}</div>
+            {% endif %}
+          </div>
         </div>
 
-        <div class="mb-8">
-          <h1 class="text-2xl sm:text-3xl font-semibold text-neutral-900 mb-2 tracking-tight">Create Account</h1>
-          <p class="text-neutral-500 text-sm">Create your account to get started.</p>
+        <div class="sp-field">
+          <input type="email" name="email" id="id_email" required
+                 placeholder="Email Address" class="sp-input with-icon"
+                 value="{{ form.email.value|default:'' }}">
+          <i data-lucide="mail" class="sp-field-icon"></i>
+          {% if form.email.errors %}
+            <div class="sp-field-err">{{ form.email.errors|striptags }}</div>
+          {% endif %}
         </div>
 
-        {% if form.non_field_errors %}
-          <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-            <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0"></i>
-            <div class="flex flex-col">
-              {% for error in form.non_field_errors %}
-                <span class="text-sm font-medium text-red-700">{{ error }}</span>
-              {% endfor %}
-            </div>
-          </div>
-        {% endif %}
-
-        <form method="post" action="{% url 'register' %}" class="flex flex-col gap-5" id="auth-form" @submit="isLoading = true">
-          {% csrf_token %}
-          
-          {% for field in form %}
-            <div class="flex flex-col gap-1.5 group">
-              <label for="{{ field.id_for_label }}" class="text-sm font-medium text-neutral-700 group-focus-within:text-blue-600 transition-colors">{{ field.label }}</label>
-              <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400 group-focus-within:text-blue-600 transition-colors">
-                  {% if 'password' in field.name.lower %}
-                    <i data-lucide="lock" class="w-4 h-4"></i>
-                  {% elif 'email' in field.name.lower %}
-                    <i data-lucide="mail" class="w-4 h-4"></i>
-                  {% elif 'username' in field.name.lower %}
-                    <i data-lucide="at-sign" class="w-4 h-4"></i>
-                  {% elif 'name' in field.name.lower or 'user' in field.name.lower %}
-                    <i data-lucide="user" class="w-4 h-4"></i>
-                  {% else %}
-                    <i data-lucide="edit-3" class="w-4 h-4"></i>
-                  {% endif %}
-                </div>
-                
-                {{ field }}
-                
-                {% if 'password' in field.name.lower %}
-                  <button type="button" 
-                          @click="showPassword = !showPassword; $refs.{{ field.name }}.type = showPassword ? 'text' : 'password'" 
-                          class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-neutral-400 hover:text-neutral-600 focus:outline-none transition-colors"
-                          title="Toggle password visibility">
-                    <i data-lucide="eye" class="w-4 h-4" x-show="!showPassword"></i>
-                    <i data-lucide="eye-off" class="w-4 h-4" x-show="showPassword" style="display: none;"></i>
-                  </button>
-                {% endif %}
-              </div>
-              
-              <!-- Password Strength Indicator (Only for main password field, guessing it's named 'password' or similar) -->
-              {% if 'password' in field.name.lower and 'confirm' not in field.name.lower and 'check' not in field.name.lower %}
-                <div class="mt-2 flex flex-col gap-1.5" x-show="password.length > 0" x-collapse>
-                  <div class="flex gap-1 h-1.5 w-full">
-                    <div class="flex-1 rounded-full transition-colors duration-300" :class="hasMinLength ? 'bg-green-500' : 'bg-neutral-200'"></div>
-                    <div class="flex-1 rounded-full transition-colors duration-300" :class="(hasMinLength && hasUpper) ? 'bg-green-500' : 'bg-neutral-200'"></div>
-                    <div class="flex-1 rounded-full transition-colors duration-300" :class="(hasMinLength && hasUpper && hasNumber) ? 'bg-green-500' : 'bg-neutral-200'"></div>
-                    <div class="flex-1 rounded-full transition-colors duration-300" :class="(hasMinLength && hasUpper && hasNumber && hasSpecial) ? 'bg-green-500' : 'bg-neutral-200'"></div>
-                  </div>
-                  <div class="grid grid-cols-2 gap-1 text-xs text-neutral-500 mt-1">
-                    <div class="flex items-center gap-1.5" :class="hasMinLength ? 'text-green-600' : ''">
-                      <i data-lucide="check" class="w-3 h-3" x-show="hasMinLength"></i>
-                      <div class="w-1.5 h-1.5 rounded-full bg-neutral-300" x-show="!hasMinLength"></div>
-                      8+ characters
-                    </div>
-                    <div class="flex items-center gap-1.5" :class="hasUpper ? 'text-green-600' : ''">
-                      <i data-lucide="check" class="w-3 h-3" x-show="hasUpper"></i>
-                      <div class="w-1.5 h-1.5 rounded-full bg-neutral-300" x-show="!hasUpper"></div>
-                      Uppercase letter
-                    </div>
-                    <div class="flex items-center gap-1.5" :class="hasNumber ? 'text-green-600' : ''">
-                      <i data-lucide="check" class="w-3 h-3" x-show="hasNumber"></i>
-                      <div class="w-1.5 h-1.5 rounded-full bg-neutral-300" x-show="!hasNumber"></div>
-                      One number
-                    </div>
-                    <div class="flex items-center gap-1.5" :class="hasSpecial ? 'text-green-600' : ''">
-                      <i data-lucide="check" class="w-3 h-3" x-show="hasSpecial"></i>
-                      <div class="w-1.5 h-1.5 rounded-full bg-neutral-300" x-show="!hasSpecial"></div>
-                      Special character
-                    </div>
-                  </div>
-                </div>
-              {% endif %}
-
-              <!-- Confirm Password Match Indicator -->
-              {% if 'confirm' in field.name.lower or 'check' in field.name.lower %}
-                <div class="text-xs font-medium flex items-center gap-1 mt-1 transition-all" x-show="confirmPassword.length > 0" :class="passwordsMatch ? 'text-green-600' : 'text-red-500'" style="display: none;">
-                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5" x-show="passwordsMatch"></i>
-                  <i data-lucide="x-circle" class="w-3.5 h-3.5" x-show="!passwordsMatch"></i>
-                  <span x-text="passwordsMatch ? 'Passwords match' : 'Passwords do not match'"></span>
-                </div>
-              {% endif %}
-
-              {% if field.help_text and not 'password' in field.name.lower %}
-                <span class="text-xs text-neutral-500">{{ field.help_text|safe }}</span>
-              {% endif %}
-              
-              {% if field.errors %}
-                <div class="text-sm font-medium text-red-500 flex items-center gap-1.5 mt-1 animate-in fade-in">
-                  <i data-lucide="alert-circle" class="w-4 h-4"></i>
-                  {{ field.errors|striptags }}
-                </div>
-              {% endif %}
-            </div>
-          {% endfor %}
-
-          <!-- Terms -->
-          <div class="flex items-start gap-3 mt-2">
-            <div class="flex items-center h-5">
-              <input id="terms" name="terms" type="checkbox" required class="w-4 h-4 text-blue-600 border-neutral-300 rounded focus:ring-blue-500 transition-colors cursor-pointer">
-            </div>
-            <label for="terms" class="text-sm text-neutral-600 leading-snug cursor-pointer">
-              I agree to the <a href="#" class="text-blue-600 hover:underline">Terms of Service</a> and <a href="#" class="text-blue-600 hover:underline">Privacy Policy</a>.
-            </label>
-          </div>
-
-          <button type="submit" class="btn-primary w-full justify-center mt-2 py-3 relative overflow-hidden group" :disabled="isLoading">
-            <span :class="{'opacity-0': isLoading}" class="flex items-center gap-2 transition-opacity">
-              Create Account
-              <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
-            </span>
-            <span x-show="isLoading" class="absolute inset-0 flex items-center justify-center" style="display: none;">
-              <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>
-            </span>
-          </button>
-        </form>
-
-        <div class="mt-8 text-center">
-          <p class="text-neutral-500 text-sm">
-            Already have an account? 
-            <a href="{% url 'login' %}" class="text-blue-600 font-semibold hover:text-blue-700 hover:underline transition-colors focus:outline-none px-1 rounded focus:ring-2 focus:ring-blue-500">
-              Sign In
-            </a>
-          </p>
+        <div class="sp-field">
+          <input type="password" name="password1" id="id_password1" required
+                 placeholder="Password" class="sp-input with-icon">
+          <i data-lucide="lock" class="sp-field-icon"></i>
+          {% if form.password1.errors %}
+            <div class="sp-field-err">{{ form.password1.errors|striptags }}</div>
+          {% endif %}
         </div>
 
+        <div class="sp-field">
+          <input type="password" name="password2" id="id_password2" required
+                 placeholder="Confirm Password" class="sp-input with-icon">
+          <i data-lucide="shield-check" class="sp-field-icon"></i>
+          {% if form.password2.errors %}
+            <div class="sp-field-err">{{ form.password2.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <div class="sp-terms">
+          <input type="checkbox" required name="terms" id="id_terms">
+          <span class="sp-terms-text">
+            I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+          </span>
+        </div>
+
+        <button type="submit" class="sp-btn">Create Account</button>
+      </form>
+
+      <div class="sp-switch">
+        Already have an account? <a href="{% url 'login' %}">Sign in</a>
       </div>
     </div>
   </div>
 </div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('auth-form');
-    if (form) {
-      form.querySelectorAll('input:not([type="checkbox"]):not([type="hidden"]):not([type="submit"]), select, textarea').forEach(el => {
-        el.classList.add('form-input', 'pl-10');
-        
-        // Add placeholder based on label
-        if (!el.getAttribute('placeholder')) {
-          const label = document.querySelector(`label[for="${el.id}"]`);
-          if (label) {
-            el.setAttribute('placeholder', `Enter your ${label.innerText.trim().toLowerCase()}`);
-          }
-        }
-
-        // Alpine data binding for passwords
-        const name = el.name.toLowerCase();
-        if (el.type === 'password' || name.includes('password')) {
-          el.setAttribute('x-ref', el.name);
-          
-          if (name.includes('confirm') || name.includes('check') || name.includes('2')) {
-            el.setAttribute('x-model', 'confirmPassword');
-          } else {
-            el.setAttribute('x-model', 'password');
-          }
-        }
-      });
-    }
-  });
-</script>
 {% endblock %}
