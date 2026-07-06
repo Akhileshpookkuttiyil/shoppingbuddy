@@ -28,46 +28,67 @@
   {% block style %}{% endblock %}
   {% block extra_css %}{% endblock %}
 </head>
-<body class="bg-neutral-50 text-neutral-900 antialiased flex flex-col min-h-screen">
+<body class="bg-neutral-50 text-neutral-900 antialiased flex flex-col min-h-screen" x-data>
 
   <!-- Navbar Component -->
+  {% block navbar %}
   {% include 'components/_navbar.html' %}
+  {% endblock %}
 
-  <!-- Global Django Messages -->
-  {% if messages %}
-  <div class="fixed top-20 right-4 z-50 flex flex-col gap-2 w-full max-w-sm pointer-events-none">
-    {% for message in messages %}
-      <div x-data="{ show: true }" x-show="show" x-transition.opacity.duration.200ms 
+  <!-- Global Toast Container -->
+  <div x-data="{ toasts: $store.toasts.list }" class="fixed top-20 right-4 z-50 flex flex-col gap-2 w-full max-w-sm pointer-events-none" aria-live="polite">
+    <template x-for="toast in toasts" :key="toast.id">
+      <div x-show="true" x-transition.opacity.duration.300ms 
            class="pointer-events-auto flex items-start gap-3 p-4 rounded-lg bg-white border border-neutral-200 shadow-sm" role="alert">
         
         <div class="flex-shrink-0 mt-0.5">
-          {% if message.tags == 'error' %}
+          <template x-if="toast.type === 'error'">
             <i data-lucide="alert-circle" class="w-5 h-5 text-red-600"></i>
-          {% elif message.tags == 'success' %}
+          </template>
+          <template x-if="toast.type === 'success'">
             <i data-lucide="check-circle-2" class="w-5 h-5 text-green-600"></i>
-          {% else %}
+          </template>
+          <template x-if="toast.type === 'warning'">
+            <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-600"></i>
+          </template>
+          <template x-if="toast.type === 'info'">
             <i data-lucide="info" class="w-5 h-5 text-blue-600"></i>
-          {% endif %}
+          </template>
+          <template x-if="toast.type === 'loading'">
+            <i data-lucide="loader-2" class="w-5 h-5 text-blue-600 animate-spin"></i>
+          </template>
         </div>
         
-        <div class="flex-1 text-sm font-medium text-neutral-900">
-          {{ message }}
-        </div>
+        <div class="flex-1 text-sm font-medium text-neutral-900" x-text="toast.message"></div>
         
-        <button @click="show = false" class="flex-shrink-0 text-neutral-400 hover:text-neutral-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 rounded-lg" aria-label="Close">
+        <button @click="$store.toasts.remove(toast.id)" class="flex-shrink-0 text-neutral-400 hover:text-neutral-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 rounded-lg" aria-label="Close">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
-    {% endfor %}
+    </template>
   </div>
+  
+  {% if messages %}
+  <script>
+    document.addEventListener('alpine:initialized', () => {
+      setTimeout(() => {
+        {% for message in messages %}
+          window.toast.{{ message.tags|default:"info" }}("{{ message|escapejs }}");
+        {% endfor %}
+      }, 100);
+    });
+  </script>
   {% endif %}
 
   <!-- Main Content Area -->
+  {% block content_wrapper %}
   <main class="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
     {% block content %}
     {% endblock %}
   </main>
+  {% endblock %}
 
+  {% block footer %}
   <footer class="bg-white border-t border-neutral-200 mt-auto py-6">
     <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex flex-col md:flex-row justify-between gap-6 mb-6">
@@ -120,19 +141,57 @@
           &copy; 2026 ShoppingBuddy. All rights reserved.
         </div>
         <div class="flex gap-4">
-          <a href="#" class="text-neutral-400 hover:text-neutral-600 transition-colors" aria-label="Facebook"><i data-lucide="facebook" class="w-4 h-4"></i></a>
-          <a href="#" class="text-neutral-400 hover:text-neutral-600 transition-colors" aria-label="Twitter"><i data-lucide="twitter" class="w-4 h-4"></i></a>
-          <a href="#" class="text-neutral-400 hover:text-neutral-600 transition-colors" aria-label="Instagram"><i data-lucide="instagram" class="w-4 h-4"></i></a>
+          <a href="#" class="text-neutral-400 hover:text-neutral-600 transition-colors" aria-label="Facebook">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" /></svg>
+          </a>
+          <a href="#" class="text-neutral-400 hover:text-neutral-600 transition-colors" aria-label="Twitter">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" /></svg>
+          </a>
+          <a href="#" class="text-neutral-400 hover:text-neutral-600 transition-colors" aria-label="Instagram">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+          </a>
         </div>
       </div>
     </div>
   </footer>
+  {% endblock %}
 
   <!-- Initialize Lucide Icons -->
   <script>
+    // Initialize icons globally, but also observe DOM changes to initialize dynamically rendered icons (like in toasts)
     lucide.createIcons();
+    const observer = new MutationObserver((mutations) => {
+      let hasNewIcons = false;
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === 1) { // Element node
+            if ((node.tagName === 'I' && node.hasAttribute('data-lucide')) || 
+                (node.querySelector && node.querySelector('i[data-lucide]'))) {
+              hasNewIcons = true;
+            }
+          }
+        });
+      });
+      if (hasNewIcons) {
+        lucide.createIcons();
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
   </script>
   
+  <!-- Global Toast System -->
+  <script src="{% static 'js/toast.js' %}"></script>
+  
+  <!-- Global API Wrapper -->
+  <script src="{% static 'js/api.js' %}"></script>
+  
+  <!-- Main JS (Network Resiliency) -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="{% static 'js/main.js' %}"></script>
+  
+  <!-- Global Auth Modal -->
+  {% include 'components/_auth_modal.html' %}
+
   {% block extra_js %}{% endblock %}
 </body>
 </html>

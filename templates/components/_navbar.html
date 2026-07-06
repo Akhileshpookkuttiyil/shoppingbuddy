@@ -83,8 +83,8 @@
         </div>
         {% else %}
         <div class="flex items-center gap-2 border-l border-neutral-200 pl-4 ml-2">
-          <a href="{% url 'login' %}" class="px-3 py-2 text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg">Log in</a>
-          <a href="{% url 'register' %}" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-sm">Sign up</a>
+          <a href="{% url 'login' %}" @click.prevent="$store.auth.open('login')" class="px-3 py-2 text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg">Log in</a>
+          <a href="{% url 'register' %}" @click.prevent="$store.auth.open('register')" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-sm">Sign up</a>
         </div>
         {% endif %}
 
@@ -97,6 +97,10 @@
             {{ wishlist_count }}
           </span>
           {% endif %}
+        </a>
+        {% else %}
+        <a href="{% url 'login' %}" @click.prevent="$store.auth.open('login', {type: 'wishlist_nav'})" class="relative p-2 ml-2 text-neutral-600 hover:text-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg hover:bg-red-50" aria-label="Wishlist">
+          <i data-lucide="heart" class="w-5 h-5"></i>
         </a>
         {% endif %}
 
@@ -119,6 +123,10 @@
           {% if wishlist_count > 0 %}
           <span class="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full border-2 border-white">{{ wishlist_count }}</span>
           {% endif %}
+        </a>
+        {% else %}
+        <a href="{% url 'login' %}" @click.prevent="$store.auth.open('login', {type: 'wishlist_nav'}); mobileMenuOpen = false" class="relative p-2 text-neutral-600 hover:text-red-600 hover:bg-red-50 focus:outline-none rounded-lg transition-colors" aria-label="Wishlist">
+          <i data-lucide="heart" class="w-6 h-6"></i>
         </a>
         {% endif %}
         
@@ -196,10 +204,10 @@
       </div>
       {% else %}
       <div class="px-6 flex flex-col gap-3">
-        <a href="{% url 'login' %}" class="w-full flex justify-center px-4 py-2 border border-neutral-300 rounded-lg shadow-sm text-sm font-medium text-neutral-700 bg-white hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+        <a href="{% url 'login' %}" @click.prevent="$store.auth.open('login'); mobileMenuOpen = false" class="w-full flex justify-center px-4 py-2 border border-neutral-300 rounded-lg shadow-sm text-sm font-medium text-neutral-700 bg-white hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
           Log in
         </a>
-        <a href="{% url 'register' %}" class="w-full flex justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+        <a href="{% url 'register' %}" @click.prevent="$store.auth.open('register'); mobileMenuOpen = false" class="w-full flex justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
           Sign up
         </a>
       </div>

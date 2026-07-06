@@ -1,0 +1,597 @@
+{% load static %}
+<style>
+  /* ── Auth Modal ─────────────────────────────────────── */
+  .am-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 1rem;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    overflow: hidden;
+  }
+
+  .am-box {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    background: #ffffff;
+    border-radius: 24px;
+    box-shadow: 0 32px 64px -12px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+    /* Scale down to fit short viewports — no scrollbars */
+    transform-origin: center center;
+    transform: scale(min(1, calc((100vh - 3rem) / 620px)));
+  }
+
+  /* top accent stripe */
+  .am-stripe {
+    height: 4px;
+    background: linear-gradient(90deg, #2563eb 0%, #7c3aed 50%, #0ea5e9 100%);
+  }
+
+  .am-body {
+    padding: 2rem 2rem 1.75rem;
+  }
+
+  /* close button */
+  .am-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: #f1f5f9;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    z-index: 10;
+  }
+  .am-close:hover { background: #e2e8f0; color: #0f172a; }
+
+  /* branding */
+  .am-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+  .am-brand-name {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+  }
+
+  /* tab strip */
+  .am-tabs {
+    display: flex;
+    background: #f1f5f9;
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 1.5rem;
+    gap: 2px;
+  }
+  .am-tab {
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: 9px;
+    border: none;
+    background: transparent;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
+  }
+  .am-tab.active {
+    background: #ffffff;
+    color: #1d4ed8;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(15, 23, 42, 0.04);
+  }
+
+  /* headline */
+  .am-headline { margin-bottom: 1.25rem; }
+  .am-headline h2 {
+    font-size: 1.375rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.025em;
+    margin-bottom: 0.25rem;
+  }
+  .am-headline p {
+    font-size: 0.875rem;
+    color: #64748b;
+  }
+
+  /* form */
+  .am-field {
+    position: relative;
+    margin-bottom: 0.875rem;
+  }
+  .am-input {
+    width: 100%;
+    height: 46px;
+    border-radius: 12px;
+    border: 1.5px solid #e2e8f0;
+    background: #f8fafc;
+    padding: 0 1rem;
+    font-size: 0.9rem;
+    color: #0f172a;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+    font-family: inherit;
+  }
+  .am-input::placeholder { color: #94a3b8; }
+  .am-input:focus {
+    outline: none;
+    border-color: #2563eb;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  }
+  .am-input.am-error { border-color: #ef4444; }
+  .am-input.am-error:focus { box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12); }
+
+  .am-field-err {
+    font-size: 0.775rem;
+    color: #ef4444;
+    margin-top: 0.3rem;
+    margin-left: 0.25rem;
+  }
+
+  /* name row */
+  .am-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.625rem;
+    margin-bottom: 0.875rem;
+  }
+  .am-row .am-field { margin-bottom: 0; }
+
+  /* remember + forgot */
+  .am-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.125rem;
+  }
+  .am-check-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: #475569;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .am-check-label input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: #2563eb;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .am-forgot {
+    font-size: 0.8rem;
+    color: #2563eb;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .am-forgot:hover { text-decoration: underline; }
+
+  /* terms */
+  .am-terms {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 1.125rem;
+  }
+  .am-terms input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: #2563eb;
+    cursor: pointer;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  .am-terms-text {
+    font-size: 0.78rem;
+    color: #64748b;
+    line-height: 1.5;
+  }
+  .am-terms-text a {
+    color: #2563eb;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .am-terms-text a:hover { text-decoration: underline; }
+
+  /* submit button */
+  .am-btn {
+    width: 100%;
+    height: 46px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    letter-spacing: 0.01em;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  }
+  .am-btn:hover {
+    background: linear-gradient(135deg, #1e40af, #1d4ed8);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.38);
+  }
+  .am-btn:active { transform: translateY(0); }
+  .am-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+
+  /* switch link */
+  .am-switch {
+    text-align: center;
+    font-size: 0.825rem;
+    color: #64748b;
+    margin-top: 1.25rem;
+    padding-top: 1.125rem;
+    border-top: 1px solid #f1f5f9;
+  }
+  .am-switch a {
+    color: #2563eb;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .am-switch a:hover { text-decoration: underline; }
+
+  /* error alert box */
+  .am-alert {
+    background: #fef2f2;
+    color: #991b1b;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    font-size: 0.825rem;
+    border: 1px solid #fca5a5;
+  }
+
+  /* spinner animation */
+  @keyframes am-spin { to { transform: rotate(360deg); } }
+  .am-spin { animation: am-spin 0.7s linear infinite; }
+
+  @media (max-width: 480px) {
+    .am-box { border-radius: 20px; }
+    .am-body { padding: 1.5rem 1.25rem 1.5rem; }
+    .am-row { grid-template-columns: 1fr; }
+  }
+</style>
+
+<!-- ── Auth Modal Overlay ──────────────────────────────── -->
+<div x-data
+     x-show="$store.auth.isOpen"
+     style="display: none;"
+     class="am-overlay"
+     @keydown.escape.window="$store.auth.close()">
+
+  <!-- backdrop click to close -->
+  <div class="absolute inset-0" @click="$store.auth.close()"></div>
+
+  <!-- modal box -->
+  <div class="am-box"
+       @click.stop
+       x-show="$store.auth.isOpen"
+       x-transition:enter="transition ease-out duration-250"
+       x-transition:enter-start="opacity-0 scale-95 translate-y-3"
+       x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+       x-transition:leave="transition ease-in duration-180"
+       x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+       x-transition:leave-end="opacity-0 scale-95 translate-y-3">
+
+    <!-- gradient stripe -->
+    <div class="am-stripe"></div>
+
+     <!-- close button -->
+    <button class="am-close" @click="$store.auth.close()" aria-label="Close" style="font-size: 20px; line-height: 1;">
+      &times;
+    </button>
+
+    <div class="am-body">
+
+      <!-- branding -->
+      <a href="{% url 'home' %}" class="am-brand" style="text-decoration:none;">
+        <span class="am-brand-name">ShoppingBuddy</span>
+      </a>
+
+      <!-- tab strip -->
+      <div class="am-tabs" role="tablist">
+        <button class="am-tab" :class="{ active: $store.auth.activeTab === 'login' }"
+                @click="$store.auth.activeTab = 'login'" role="tab">Sign In</button>
+        <button class="am-tab" :class="{ active: $store.auth.activeTab === 'register' }"
+                @click="$store.auth.activeTab = 'register'" role="tab">Create Account</button>
+      </div>
+
+      <!-- ── LOGIN PANEL ─────────────────────────────── -->
+      <div x-show="$store.auth.activeTab === 'login'" style="display:none;">
+
+        <div class="am-headline">
+          <h2>Welcome back 👋</h2>
+          <p>Sign in to your ShoppingBuddy account.</p>
+        </div>
+
+        {% if form.non_field_errors %}
+          <div class="am-alert">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+
+        <!-- Alpine error -->
+        <template x-if="$store.auth.errors && $store.auth.errors.__all__">
+          <div class="am-alert" x-text="$store.auth.errors.__all__[0]"></div>
+        </template>
+
+        <form @submit.prevent="$store.auth.submitLogin($event)">
+          {% csrf_token %}
+
+          <div class="am-field">
+            <input type="text" name="username" id="am_username"
+                   x-model="$store.auth.formData.login.username"
+                   required placeholder="Email or Username"
+                   class="am-input"
+                   :class="{ 'am-error': $store.auth.errors && $store.auth.errors.username }">
+            <template x-if="$store.auth.errors && $store.auth.errors.username">
+              <div class="am-field-err" x-text="$store.auth.errors.username[0]"></div>
+            </template>
+          </div>
+
+          <div class="am-field">
+            <input type="password" name="password" id="am_password"
+                   x-model="$store.auth.formData.login.password"
+                   required placeholder="Password"
+                   class="am-input"
+                   :class="{ 'am-error': $store.auth.errors && $store.auth.errors.password }">
+          </div>
+
+          <div class="am-meta">
+            <label class="am-check-label">
+              <input type="checkbox" name="remember" x-model="$store.auth.formData.login.remember">
+              Remember me
+            </label>
+            <a href="#" class="am-forgot">Forgot password?</a>
+          </div>
+
+          <button type="submit" class="am-btn" :disabled="$store.auth.isSubmitting">
+            <template x-if="!$store.auth.isSubmitting">
+              <span>Sign In</span>
+            </template>
+            <template x-if="$store.auth.isSubmitting">
+              <svg class="am-spin" style="width:18px;height:18px;color:white;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" opacity="0.5"/>
+                <path d="M12 2v4" stroke-linecap="round"/>
+              </svg>
+            </template>
+          </button>
+        </form>
+
+        <div class="am-switch">
+          New to ShoppingBuddy? <a @click.prevent="$store.auth.activeTab = 'register'" href="#">Create a free account</a>
+        </div>
+      </div>
+
+      <!-- ── REGISTER PANEL ──────────────────────────── -->
+      <div x-show="$store.auth.activeTab === 'register'" style="display:none;">
+
+        <div class="am-headline">
+          <h2>Join ShoppingBuddy ✨</h2>
+          <p>Create your free account and start shopping.</p>
+        </div>
+
+        {% if form.non_field_errors %}
+          <div class="am-alert">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+
+        <form @submit.prevent="$store.auth.submitRegister($event)">
+          {% csrf_token %}
+
+          <div class="am-row">
+            <div class="am-field">
+              <input type="text" name="first_name" id="am_first_name"
+                     x-model="$store.auth.formData.register.first_name"
+                     required placeholder="First Name"
+                     class="am-input">
+            </div>
+            <div class="am-field">
+              <input type="text" name="last_name" id="am_last_name"
+                     x-model="$store.auth.formData.register.last_name"
+                     required placeholder="Last Name"
+                     class="am-input">
+            </div>
+          </div>
+
+          <div class="am-field">
+            <input type="email" name="email" id="am_email"
+                   x-model="$store.auth.formData.register.email"
+                   required placeholder="Email Address"
+                   class="am-input"
+                   :class="{ 'am-error': $store.auth.errors && $store.auth.errors.email }">
+            <template x-if="$store.auth.errors && $store.auth.errors.email">
+              <div class="am-field-err" x-text="$store.auth.errors.email[0]"></div>
+            </template>
+          </div>
+
+          <div class="am-field">
+            <input type="password" name="password1" id="am_password1"
+                   x-model="$store.auth.formData.register.password"
+                   required placeholder="Password"
+                   class="am-input"
+                   :class="{ 'am-error': $store.auth.errors && $store.auth.errors.password1 }">
+          </div>
+
+          <div class="am-field">
+            <input type="password" name="password2" id="am_password2"
+                   x-model="$store.auth.formData.register.confirm_password"
+                   required placeholder="Confirm Password"
+                   class="am-input"
+                   :class="{ 'am-error': $store.auth.errors && $store.auth.errors.password2 }">
+          </div>
+
+          <div class="am-terms">
+            <input type="checkbox" required name="terms" id="am_terms">
+            <span class="am-terms-text">
+              I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+            </span>
+          </div>
+
+          <button type="submit" class="am-btn" :disabled="$store.auth.isSubmitting">
+            <template x-if="!$store.auth.isSubmitting">
+              <span>Create Account</span>
+            </template>
+            <template x-if="$store.auth.isSubmitting">
+              <svg class="am-spin" style="width:18px;height:18px;color:white;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" opacity="0.5"/>
+                <path d="M12 2v4" stroke-linecap="round"/>
+              </svg>
+            </template>
+          </button>
+        </form>
+
+        <div class="am-switch">
+          Already have an account? <a @click.prevent="$store.auth.activeTab = 'login'" href="#">Sign in</a>
+        </div>
+      </div>
+
+    </div><!-- /.am-body -->
+  </div><!-- /.am-box -->
+</div><!-- /.am-overlay -->
+
+<script>
+  document.addEventListener('alpine:init', () => {
+    Alpine.store('auth', {
+      isOpen: false,
+      activeTab: 'login',
+      isSubmitting: false,
+      errors: {},
+      triggerElement: null,
+      pendingAction: null,
+      formData: {
+        login: { username: '', password: '', remember: false },
+        register: { first_name: '', last_name: '', email: '', password: '', confirm_password: '' }
+      },
+
+      open(tab = 'login', action = null) {
+        this.activeTab = tab;
+        this.pendingAction = action;
+        this.triggerElement = document.activeElement;
+        this.errors = {};
+        this.isOpen = true;
+        document.body.style.overflow = 'hidden';
+      },
+
+      close() {
+        this.isOpen = false;
+        document.body.style.overflow = '';
+        if (this.triggerElement) {
+          this.triggerElement.focus();
+          this.triggerElement = null;
+        }
+      },
+
+      switchTab(tab) { this.activeTab = tab; this.errors = {}; },
+
+      async submitLogin(e) {
+        this.isSubmitting = true;
+        this.errors = {};
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const fd = new FormData();
+        fd.append('username', this.formData.login.username);
+        fd.append('password', this.formData.login.password);
+        fd.append('csrfmiddlewaretoken', csrfToken);
+        try {
+          const res = await fetch('{% url "login" %}', {
+            method: 'POST', body: fd,
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+          });
+          const data = await res.json();
+          if (data.success) {
+            window.toast.success("Logged in successfully.");
+            this.resumePendingAction();
+            this.close();
+            if (!this.pendingAction) setTimeout(() => window.location.reload(), 500);
+          } else {
+            this.errors = data.errors || {};
+            if (this.errors.__all__) window.toast.error("Invalid credentials.");
+          }
+        } catch(err) {
+          window.toast.error("Something went wrong.");
+        } finally {
+          this.isSubmitting = false;
+        }
+      },
+
+      async submitRegister(e) {
+        this.isSubmitting = true;
+        this.errors = {};
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const fd = new FormData();
+        fd.append('first_name', this.formData.register.first_name);
+        fd.append('last_name', this.formData.register.last_name);
+        fd.append('email', this.formData.register.email);
+        fd.append('username', this.formData.register.email);
+        fd.append('password1', this.formData.register.password);
+        fd.append('password2', this.formData.register.confirm_password);
+        fd.append('csrfmiddlewaretoken', csrfToken);
+        try {
+          const res = await fetch('{% url "register" %}', {
+            method: 'POST', body: fd,
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+          });
+          const data = await res.json();
+          if (data.success) {
+            window.toast.success("Account created! Welcome aboard 🎉");
+            this.resumePendingAction();
+            this.close();
+            if (!this.pendingAction) setTimeout(() => window.location.reload(), 500);
+          } else {
+            this.errors = data.errors || {};
+          }
+        } catch(err) {
+          window.toast.error("Something went wrong.");
+        } finally {
+          this.isSubmitting = false;
+        }
+      },
+
+      resumePendingAction() {
+        if (!this.pendingAction) return;
+        if (this.pendingAction.type === 'wishlist_nav') {
+          window.dispatchEvent(new CustomEvent('auth-success-wishlist', { detail: this.pendingAction }));
+        }
+        this.pendingAction = null;
+      },
+
+      reset() {
+        this.errors = {};
+        this.formData = {
+          login: { username: '', password: '', remember: false },
+          register: { first_name: '', last_name: '', email: '', password: '', confirm_password: '' }
+        };
+      }
+    });
+  });
+</script>
