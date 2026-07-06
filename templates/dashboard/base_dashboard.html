@@ -1,0 +1,95 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Dashboard | ShoppingBuddy{% endblock %}</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="{% static 'css/output.css' %}?v=3.5">
+  
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+  </style>
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-100 text-gray-900 font-sans antialiased" x-data="{ sidebarOpen: false }">
+
+    <!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 z-30 w-64 bg-gray-900 text-white transition duration-300 transform lg:translate-x-0 lg:static lg:inset-0" :class="{'translate-x-0 ease-out': sidebarOpen, '-translate-x-full ease-in': !sidebarOpen}">
+        <div class="flex items-center justify-center h-16 bg-gray-800 border-b border-gray-700">
+            <span class="text-white font-bold text-lg">ShoppingBuddy Admin</span>
+        </div>
+        
+        <nav class="mt-5 px-2 space-y-1">
+            <a href="{% url 'dashboard:index' %}" class="flex items-center px-4 py-2 text-gray-300 rounded-md hover:bg-gray-700 hover:text-white {% if request.resolver_match.url_name == 'index' %}bg-gray-800 text-white font-medium{% endif %}">
+                <i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i>
+                Dashboard
+            </a>
+            
+            <a href="#" class="flex items-center px-4 py-2 text-gray-300 rounded-md hover:bg-gray-700 hover:text-white">
+                <i data-lucide="package" class="w-5 h-5 mr-3"></i>
+                Products
+            </a>
+            
+            <a href="#" class="flex items-center px-4 py-2 text-gray-300 rounded-md hover:bg-gray-700 hover:text-white">
+                <i data-lucide="shopping-bag" class="w-5 h-5 mr-3"></i>
+                Orders
+            </a>
+            
+            <a href="#" class="flex items-center px-4 py-2 text-gray-300 rounded-md hover:bg-gray-700 hover:text-white">
+                <i data-lucide="users" class="w-5 h-5 mr-3"></i>
+                Customers
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col min-w-0 bg-gray-100 lg:pl-64 h-screen absolute inset-0 lg:static">
+        
+        <!-- Header -->
+        <header class="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shadow-sm z-20">
+            <div class="flex items-center">
+                <button @click="sidebarOpen = true" class="text-gray-500 focus:outline-none lg:hidden">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <div class="flex items-center">
+                <div x-data="{ dropdownOpen: false }" class="relative">
+                    <button @click="dropdownOpen = !dropdownOpen" class="flex items-center text-gray-600 focus:outline-none">
+                        <span class="mr-2">{{ user.username }}</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                    </button>
+                    
+                    <div x-show="dropdownOpen" @click.away="dropdownOpen = false" class="absolute right-0 mt-2 w-48 bg-white rounded-md overflow-hidden shadow-xl z-10 hidden" :class="{'hidden': !dropdownOpen}">
+                        <a href="/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white">View Store</a>
+                        <a href="{% url 'logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-red-600 hover:text-white">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main section -->
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Mobile overlay -->
+    <div x-show="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 z-20 transition-opacity bg-black opacity-50 lg:hidden hidden" :class="{'hidden': !sidebarOpen}"></div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
