@@ -16,6 +16,7 @@
 
 	// Products Slick
 	$('.products-slick').each(function() {
+		if (!$.fn.slick) return;
 		var $this = $(this),
 				$nav = $this.attr('data-nav');
 
@@ -48,6 +49,7 @@
 
 	// Products Widget Slick
 	$('.products-widget-slick').each(function() {
+		if (!$.fn.slick) return;
 		var $this = $(this),
 				$nav = $this.attr('data-nav');
 
@@ -64,7 +66,7 @@
 	/////////////////////////////////////////
 
 	// Product Main img Slick
-	$('#product-main-img').slick({
+	if ($.fn.slick) $('#product-main-img').slick({
     infinite: true,
     speed: 300,
     dots: false,
@@ -74,7 +76,7 @@
   });
 
 	// Product imgs Slick
-  $('#product-imgs').slick({
+  if ($.fn.slick) $('#product-imgs').slick({
     slidesToShow: 3,
     slidesToScroll: 1,
     arrows: true,
@@ -97,7 +99,7 @@
 	// Product img zoom
 	var zoomMainProduct = document.getElementById('product-main-img');
 	if (zoomMainProduct) {
-		$('#product-main-img .product-preview').zoom();
+		if ($.fn.zoom) $('#product-main-img .product-preview').zoom();
 	}
 
 	/////////////////////////////////////////
@@ -164,5 +166,25 @@
 			handle ? priceInputMax.value = value : priceInputMin.value = value
 		});
 	}
+
+	// Network Resiliency
+	let offlineToastId = null;
+	window.addEventListener('offline', function(e) {
+		if (window.toast) {
+			offlineToastId = window.toast.error("You are currently offline. Some features may be disabled.", { duration: 0 });
+		}
+		document.body.classList.add('is-offline');
+		// Disable network-dependent buttons
+		$('.network-dependent').prop('disabled', true);
+	});
+
+	window.addEventListener('online', function(e) {
+		if (window.toast) {
+			if (offlineToastId !== null) window.toast.remove(offlineToastId);
+			window.toast.success("You are back online!");
+		}
+		document.body.classList.remove('is-offline');
+		$('.network-dependent').prop('disabled', false);
+	});
 
 })(jQuery);
