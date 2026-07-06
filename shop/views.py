@@ -65,6 +65,7 @@ def detail(request, c_slug, p_slug):
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.contrib import messages
+from django.http import JsonResponse
 from .models import Wishlist
 
 @login_required
@@ -75,9 +76,20 @@ def toggle_wishlist(request, product_id):
     
     if not created:
         wishlist_item.delete()
-        messages.info(request, f'Removed {product.name} from your wishlist.')
+        msg = f'Removed {product.name} from your wishlist.'
+        if request.headers.get('x-requested-with') != 'XMLHttpRequest':
+            messages.info(request, msg)
     else:
-        messages.success(request, f'Added {product.name} to your wishlist.')
+        msg = f'Added {product.name} to your wishlist.'
+        if request.headers.get('x-requested-with') != 'XMLHttpRequest':
+            messages.success(request, msg)
+            
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({
+            'status': 'success', 
+            'message': msg, 
+            'in_wishlist': created
+        })
         
     return redirect(request.META.get('HTTP_REFERER', '/'))
 

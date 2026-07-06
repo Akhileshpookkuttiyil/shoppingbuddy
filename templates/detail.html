@@ -161,9 +161,28 @@
       <div class="flex flex-col gap-3">
         {% if product.in_stock and product.stock > 0 %}
           <a href="{% url 'cartAdd' product.id %}"
-             class="btn-primary-lg w-full justify-center">
-            <i data-lucide="shopping-cart" class="w-5 h-5"></i>
-            Add to Cart
+             x-data="{
+               loading: false,
+               async add(e) {
+                 e.preventDefault();
+                 if (this.loading) return;
+                 this.loading = true;
+                 try {
+                   const res = await window.api.get(this.$el.href, { showErrorToast: true });
+                   window.toast.success(res.message || 'Added to cart');
+                 } catch (err) {
+                   // Error handled
+                 } finally {
+                   this.loading = false;
+                 }
+               }
+             }"
+             @click="add($event)"
+             class="btn-primary-lg w-full justify-center relative">
+            <span :class="loading ? 'opacity-0' : 'opacity-100'" class="flex items-center gap-2 transition-opacity">
+              <i data-lucide="shopping-cart" class="w-5 h-5"></i> Add to Cart
+            </span>
+            <i data-lucide="loader-2" class="w-5 h-5 animate-spin absolute inset-auto" x-show="loading" x-cloak></i>
           </a>
         {% else %}
           <button disabled class="btn-primary-lg w-full justify-center opacity-40 cursor-not-allowed">
@@ -173,9 +192,34 @@
         {% endif %}
 
         <div class="grid grid-cols-2 gap-3">
-          <a href="{% url 'toggle_wishlist' product.id %}" class="btn-secondary w-full justify-center {% if product.id in wishlist_product_ids %}text-red-600 border-red-200 bg-red-50 hover:bg-red-100{% endif %}">
-            <i data-lucide="heart" class="w-4 h-4 {% if product.id in wishlist_product_ids %}fill-red-600 text-red-600{% else %}text-neutral-400{% endif %}"></i>
-            {% if product.id in wishlist_product_ids %}Saved{% else %}Save{% endif %}
+          <a href="{% url 'toggle_wishlist' product.id %}" 
+             x-data="{ 
+               inWishlist: {% if product.id in wishlist_product_ids %}true{% else %}false{% endif %}, 
+               loading: false,
+               async toggle(e) {
+                 e.preventDefault();
+                 if (this.loading) return;
+                 this.loading = true;
+                 this.inWishlist = !this.inWishlist;
+                 try {
+                   const res = await window.api.get(this.$el.href, { showErrorToast: true });
+                   if(res.in_wishlist !== undefined) this.inWishlist = res.in_wishlist;
+                   window.toast.success(res.message || 'Wishlist updated');
+                 } catch (err) {
+                   this.inWishlist = !this.inWishlist;
+                 } finally {
+                   this.loading = false;
+                 }
+               }
+             }"
+             @click="toggle($event)"
+             class="btn-secondary w-full justify-center relative transition-colors"
+             :class="inWishlist ? 'text-red-600 border-red-200 bg-red-50 hover:bg-red-100' : ''">
+             <span :class="loading ? 'opacity-0' : 'opacity-100'" class="flex items-center gap-2 transition-opacity">
+               <i data-lucide="heart" class="w-4 h-4 transition-colors" :class="inWishlist ? 'fill-red-600 text-red-600' : 'text-neutral-400'"></i>
+               <span x-text="inWishlist ? 'Saved' : 'Save'"></span>
+             </span>
+             <i data-lucide="loader-2" class="w-5 h-5 animate-spin absolute inset-auto" x-show="loading" x-cloak></i>
           </a>
           
           <a href="{{ product.category.get_url }}" class="btn-secondary w-full justify-center">
@@ -223,8 +267,23 @@
     
     <div class="flex-shrink-0">
       {% if product.in_stock and product.stock > 0 %}
-        <a href="{% url 'cartAdd' product.id %}" class="btn-primary">
-          Add to Cart
+        <a href="{% url 'cartAdd' product.id %}" 
+           x-data="{
+             loading: false,
+             async add(e) {
+               e.preventDefault();
+               if (this.loading) return;
+               this.loading = true;
+               try {
+                 const res = await window.api.get(this.$el.href, { showErrorToast: true });
+                 window.toast.success(res.message || 'Added to cart');
+               } catch (err) {} finally { this.loading = false; }
+             }
+           }"
+           @click="add($event)"
+           class="btn-primary relative">
+           <span :class="loading ? 'opacity-0' : 'opacity-100'">Add to Cart</span>
+           <i data-lucide="loader-2" class="w-4 h-4 animate-spin absolute inset-auto left-1/2 -ml-2" x-show="loading" x-cloak></i>
         </a>
       {% else %}
         <button disabled class="btn-primary opacity-40 cursor-not-allowed">

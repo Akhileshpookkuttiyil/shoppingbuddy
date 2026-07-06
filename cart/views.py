@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
 from django.db.models import F
 from .models import Cart_List, Cart_Items
 from shop.models import Product
@@ -72,6 +73,11 @@ def add_cart(request, product_id):
             cart_item.quantity = F('quantity') + 1
             cart_item.save()
             
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        # Return total cart count for UI update
+        cart_count = Cart_Items.objects.filter(cart=cart).count()
+        return JsonResponse({'status': 'success', 'message': 'Item added to cart', 'cart_count': cart_count})
+        
     return redirect('cart_details')
     
 def min_cart(request, product_id):
@@ -91,6 +97,9 @@ def min_cart(request, product_id):
         except Cart_Items.DoesNotExist:
             pass
             
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'status': 'success', 'message': 'Cart updated'})
+            
     return redirect('cart_details')
 
 def del_cart(request, product_id):
@@ -102,6 +111,9 @@ def del_cart(request, product_id):
         # Perform a direct query deletion, saving a database trip vs .get().delete()
         Cart_Items.objects.filter(product=product, cart=cart).delete()
         
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'status': 'success', 'message': 'Item removed from cart'})
+        
     return redirect('cart_details')
 
 def clear_cart(request):
@@ -111,5 +123,8 @@ def clear_cart(request):
     if cart:
         # Efficient bulk delete
         Cart_Items.objects.filter(cart=cart).delete()
+        
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'status': 'success', 'message': 'Cart cleared'})
         
     return redirect('cart_details')

@@ -25,9 +25,34 @@
     <!-- Wishlist Button -->
     <object class="absolute top-3 right-3 z-20">
       <a href="{% url 'toggle_wishlist' product.id %}" 
+         x-data="{ 
+           inWishlist: {% if product.id in wishlist_product_ids %}true{% else %}false{% endif %}, 
+           loading: false,
+           async toggle(e) {
+             e.preventDefault();
+             if (this.loading) return;
+             this.loading = true;
+             // Optimistic update
+             this.inWishlist = !this.inWishlist;
+             try {
+               const res = await window.api.get(this.$el.href, { showErrorToast: true });
+               if(res.in_wishlist !== undefined) {
+                 this.inWishlist = res.in_wishlist; // Sync with server
+               }
+               window.toast.success(res.message || 'Wishlist updated');
+             } catch (err) {
+               // Revert on failure
+               this.inWishlist = !this.inWishlist;
+             } finally {
+               this.loading = false;
+             }
+           }
+         }"
+         @click="toggle($event)"
          class="flex items-center justify-center p-1.5 rounded-full bg-white/80 backdrop-blur border border-white/50 text-neutral-400 hover:text-red-500 hover:bg-red-50 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-red-500"
-         title="{% if product.id in wishlist_product_ids %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}">
-        <i data-lucide="heart" class="w-4 h-4 {% if product.id in wishlist_product_ids %}fill-red-500 text-red-500{% endif %}"></i>
+         :title="inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'">
+        <i data-lucide="heart" class="w-4 h-4 transition-colors" :class="inWishlist ? 'fill-red-500 text-red-500' : ''"></i>
+        <i data-lucide="loader-2" class="w-4 h-4 animate-spin absolute" x-show="loading" x-cloak></i>
       </a>
     </object>
 
@@ -74,12 +99,30 @@
         <!-- Cart -->
         {% if product.in_stock and product.stock > 0 %}
           <a href="{% url 'cartAdd' product.id %}"
-             class="flex items-center justify-center p-2 rounded-lg bg-blue-600 text-white
+             x-data="{
+               loading: false,
+               async add(e) {
+                 e.preventDefault();
+                 if (this.loading) return;
+                 this.loading = true;
+                 try {
+                   const res = await window.api.get(this.$el.href, { showErrorToast: true });
+                   window.toast.success(res.message || 'Added to cart');
+                 } catch (err) {
+                   // Error handled by api wrapper
+                 } finally {
+                   this.loading = false;
+                 }
+               }
+             }"
+             @click="add($event)"
+             class="relative flex items-center justify-center p-2 rounded-lg bg-blue-600 text-white
                     hover:bg-blue-700 transition-colors
                     focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500"
              aria-label="Add {{ product.name }} to cart"
              title="Add to cart">
-            <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+            <span :class="loading ? 'opacity-0' : 'opacity-100'"><i data-lucide="shopping-cart" class="w-4 h-4"></i></span>
+            <i data-lucide="loader-2" class="w-4 h-4 animate-spin absolute inset-auto" x-show="loading" x-cloak></i>
           </a>
         {% else %}
           <button disabled

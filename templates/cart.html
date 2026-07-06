@@ -17,18 +17,7 @@
 
   {% if not cart_items %}
     <!-- Empty State -->
-    <div class="bg-white rounded-lg border border-neutral-200 p-12 text-center flex flex-col items-center justify-center">
-      <div class="mb-4 text-neutral-400">
-        <i data-lucide="shopping-cart" class="w-10 h-10"></i>
-      </div>
-      <h2 class="text-lg font-semibold text-neutral-900 mb-2">Your cart is empty</h2>
-      <p class="text-neutral-500 max-w-sm mx-auto mb-6 text-sm">
-        You haven't added anything to your cart yet. Discover our premium products and start shopping.
-      </p>
-      <a href="/" class="inline-flex items-center justify-center px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
-        Continue Shopping
-      </a>
-    </div>
+    {% include 'components/_empty_state.html' with icon="shopping-cart" title="Your cart is empty" description="You haven't added anything to your cart yet. Discover our premium products and start shopping." action_url="/" action_text="Continue Shopping" %}
   {% else %}
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
       
@@ -44,10 +33,47 @@
         
         <div class="border-t border-neutral-200 divide-y divide-neutral-200">
           {% for item in cart_items %}
-            <div class="py-6 flex flex-col sm:flex-row gap-6">
+            <div class="py-6 flex flex-col sm:flex-row gap-6"
+                 x-data="{ 
+                   qty: {{ item.quantity }}, 
+                   price: {{ item.product.price }},
+                   loading: false,
+                   deleted: false,
+                   async updateCart(url, delta) {
+                     if (this.loading) return;
+                     this.loading = true;
+                     const oldQty = this.qty;
+                     this.qty += delta;
+                     try {
+                       const res = await window.api.get(url, { showErrorToast: true });
+                       window.toast.success(res.message);
+                       setTimeout(() => window.location.reload(), 500); // Reload to sync totals safely
+                     } catch (err) {
+                       this.qty = oldQty;
+                     } finally {
+                       this.loading = false;
+                     }
+                   },
+                   async removeCart(url) {
+                     if (this.loading) return;
+                     this.loading = true;
+                     this.deleted = true;
+                     try {
+                       const res = await window.api.get(url, { showErrorToast: true });
+                       window.toast.success(res.message);
+                       setTimeout(() => window.location.reload(), 500);
+                     } catch (err) {
+                       this.deleted = false;
+                     } finally {
+                       this.loading = false;
+                     }
+                   }
+                 }"
+                 x-show="!deleted"
+                 x-transition>
               
               <!-- Image -->
-              <a href="{{ item.product.get_url }}" class="flex-shrink-0 w-24 h-24 sm:w-28 sm:h-28 bg-white border border-neutral-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 relative block">
+              <a href="{{ item.product.get_url }}" class="flex-shrink-0 w-24 h-24 sm:w-28 sm:h-28 bg-white border border-neutral-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 relative block" :class="loading ? 'opacity-50' : ''">
                 {% if item.product.image %}
                   <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="w-full h-full object-contain">
                 {% else %}
@@ -58,7 +84,7 @@
               </a>
               
               <!-- Details & Controls -->
-              <div class="flex-grow flex flex-col justify-between">
+              <div class="flex-grow flex flex-col justify-between" :class="loading ? 'opacity-50 pointer-events-none' : ''">
                 <div class="flex justify-between items-start gap-4">
                   <div>
                     <a href="{{ item.product.category.get_url }}" class="text-xs font-medium text-neutral-500 hover:text-neutral-900 transition-colors mb-1 inline-block focus:outline-none focus:underline">
@@ -74,32 +100,29 @@
                     </div>
                   </div>
                   
-                  <a href="{% url 'cartdel' item.product.id %}" class="text-neutral-400 hover:text-red-600 transition-colors focus:outline-none" aria-label="Remove item" title="Remove">
+                  <button @click.prevent="removeCart('{% url 'cartdel' item.product.id %}')" class="text-neutral-400 hover:text-red-600 transition-colors focus:outline-none" aria-label="Remove item" title="Remove">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
-                  </a>
+                  </button>
                 </div>
                 
                 <div class="flex items-center justify-between mt-4">
                   
                   <!-- Quantity Controls -->
                   <div class="flex items-center border border-neutral-200 rounded-lg bg-white overflow-hidden h-8">
-                    <a href="{% url 'cartMin' item.product.id %}" class="w-8 h-full flex items-center justify-center text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50 transition-colors focus:outline-none" aria-label="Decrease quantity">
+                    <button @click.prevent="updateCart('{% url 'cartMin' item.product.id %}', -1)" class="w-8 h-full flex items-center justify-center text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50 transition-colors focus:outline-none" aria-label="Decrease quantity">
                       <i data-lucide="minus" class="w-3 h-3"></i>
-                    </a>
-                    <div class="w-10 h-full flex items-center justify-center text-sm font-medium text-neutral-700 border-x border-neutral-200">
-                      {{ item.quantity }}
+                    </button>
+                    <div class="w-10 h-full flex items-center justify-center text-sm font-medium text-neutral-700 border-x border-neutral-200" x-text="qty">
                     </div>
-                    <a href="{% url 'cartAdd' item.product.id %}" class="w-8 h-full flex items-center justify-center text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50 transition-colors focus:outline-none" aria-label="Increase quantity">
+                    <button @click.prevent="updateCart('{% url 'cartAdd' item.product.id %}', 1)" class="w-8 h-full flex items-center justify-center text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50 transition-colors focus:outline-none" aria-label="Increase quantity">
                       <i data-lucide="plus" class="w-3 h-3"></i>
-                    </a>
+                    </button>
                   </div>
                   
                   <!-- Line Total via Alpine -->
                   <div class="text-right">
                     <span class="block text-xs text-neutral-500 mb-0.5">Subtotal</span>
-                    <span x-data="{ price: {{ item.product.price }}, qty: {{ item.quantity }} }" 
-                          x-text="'₹' + (price * qty)" 
-                          class="text-base font-semibold text-neutral-900">
+                    <span x-text="'₹' + (price * qty)" class="text-base font-semibold text-neutral-900">
                     </span>
                   </div>
                   
