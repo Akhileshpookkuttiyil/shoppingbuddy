@@ -535,7 +535,7 @@
             if (!this.pendingAction) setTimeout(() => window.location.reload(), 500);
           } else {
             this.errors = data.errors || {};
-            if (this.errors.__all__) window.toast.error("Invalid credentials.");
+            this.showErrorsInToasts(this.errors);
           }
         } catch(err) {
           window.toast.error("Something went wrong.");
@@ -569,12 +569,30 @@
             if (!this.pendingAction) setTimeout(() => window.location.reload(), 500);
           } else {
             this.errors = data.errors || {};
+            this.showErrorsInToasts(this.errors);
           }
         } catch(err) {
           window.toast.error("Something went wrong.");
         } finally {
           this.isSubmitting = false;
         }
+      },
+
+      showErrorsInToasts(errors) {
+        if (!errors) return;
+        Object.keys(errors).forEach(field => {
+          if (Array.isArray(errors[field])) {
+            errors[field].forEach(msg => {
+              if (field === '__all__') {
+                window.toast.error(msg);
+              } else {
+                const fieldName = field.replace('_', ' ');
+                const capitalizedField = fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
+                window.toast.error(`${capitalizedField}: ${msg}`);
+              }
+            });
+          }
+        });
       },
 
       resumePendingAction() {
