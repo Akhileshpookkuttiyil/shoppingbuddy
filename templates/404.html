@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Page Not Found - ShoppingBuddy{% endblock %}
+
+{% block content %}
+<div class="flex-grow flex items-center justify-center min-h-[50vh]">
+  {% include 'components/_error_state.html' with icon="search-x" title="Page Not Found" description="The page you are looking for doesn't exist or has been moved." action_url="/" action_text="Go Home" %}
+</div>
+{% endblock %}

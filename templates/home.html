@@ -153,13 +153,8 @@
       {% include 'components/_pagination.html' %}
     {% else %}
       <!-- Empty State -->
-      <div class="card-padded flex flex-col items-center text-center py-14">
-        <i data-lucide="package-x" class="w-10 h-10 text-neutral-300 mb-4"></i>
-        <h3 class="text-base font-semibold text-neutral-900 mb-1">No products found</h3>
-        <p class="text-neutral-500 text-sm max-w-xs mx-auto mb-6">
-          We're currently restocking our catalog. Please check back soon.
-        </p>
-        <a href="/" class="btn-secondary">Refresh</a>
+      <div class="card bg-white border border-neutral-100 shadow-sm rounded-xl">
+        {% include 'components/_empty_state.html' with icon="package-x" title="No products found" description="We're currently restocking our catalog. Please check back soon." action_url="/" action_text="Refresh" %}
       </div>
     {% endif %}
   </section>

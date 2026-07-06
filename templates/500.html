@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Server Error - ShoppingBuddy{% endblock %}
+
+{% block content %}
+<div class="flex-grow flex items-center justify-center min-h-[50vh]">
+  {% include 'components/_error_state.html' with icon="server-crash" title="Internal Server Error" description="Oops, something went wrong on our end. We're working on fixing it." action_url="/" action_text="Go Home" retry_url="javascript:window.location.reload();" retry_text="Try Again" %}
+</div>
+{% endblock %}

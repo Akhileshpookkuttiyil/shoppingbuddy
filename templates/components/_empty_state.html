@@ -1,0 +1,32 @@
+<div class="flex flex-col items-center justify-center py-16 px-4 text-center">
+  <div class="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-neutral-100 text-neutral-400">
+    <!-- Default Illustration if none provided -->
+    {% if icon %}
+      <i data-lucide="{{ icon }}" class="h-12 w-12"></i>
+    {% else %}
+      <i data-lucide="inbox" class="h-12 w-12"></i>
+    {% endif %}
+  </div>
+  
+  <h3 class="mb-2 text-xl font-semibold text-neutral-900">
+    {{ title|default:"Nothing to see here" }}
+  </h3>
+  
+  <p class="mb-8 max-w-md text-sm text-neutral-500">
+    {{ description|default:"There is no data available at the moment." }}
+  </p>
+  
+  <div class="flex flex-col gap-3 sm:flex-row">
+    {% if action_url and action_text %}
+    <a href="{{ action_url }}" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+      {{ action_text }}
+    </a>
+    {% endif %}
+    
+    {% if secondary_action_url and secondary_action_text %}
+    <a href="{{ secondary_action_url }}" class="inline-flex items-center justify-center rounded-lg border border-neutral-200 bg-white px-6 py-2.5 text-sm font-medium text-neutral-900 transition-colors hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-200/50">
+      {{ secondary_action_text }}
+    </a>
+    {% endif %}
+  </div>
+</div>

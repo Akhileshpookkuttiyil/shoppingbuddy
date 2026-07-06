@@ -17,17 +17,8 @@
 
   {% if not wishlist_items %}
     <!-- Empty State -->
-    <div class="card-padded flex flex-col items-center justify-center text-center py-16">
-      <div class="mb-4 text-neutral-300">
-        <i data-lucide="heart" class="w-12 h-12"></i>
-      </div>
-      <h2 class="text-lg font-semibold text-neutral-900 mb-2">Your wishlist is empty</h2>
-      <p class="text-neutral-500 max-w-sm mx-auto mb-6 text-sm">
-        Save items you love here and purchase them when you're ready.
-      </p>
-      <a href="/" class="btn-primary">
-        Explore Products
-      </a>
+    <div class="card bg-white border border-neutral-100 shadow-sm rounded-xl">
+      {% include 'components/_empty_state.html' with icon="heart" title="Your wishlist is empty" description="Save items you love here and purchase them when you're ready." action_url="/" action_text="Explore Products" %}
     </div>
   {% else %}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
