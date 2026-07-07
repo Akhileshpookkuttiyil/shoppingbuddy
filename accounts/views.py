@@ -109,5 +109,30 @@ def edit_address(request, address_id):
         form = UserAddressForm(instance=address, user=request.user)
     return render(request, 'account/address_form.html', {'form': form})
 
+from django.views.decorators.http import require_POST
+from django.db import transaction
+
+@login_required
+@require_POST
+def delete_address(request, address_id):
+    address = get_object_or_404(UserAddress, pk=address_id, user=request.user, is_active=True)
+    
+    with transaction.atomic():
+        # Rule 2: If address is default and other active addresses exist, promote another one
+        if address.is_default:
+            other_active = request.user.addresses.filter(is_active=True).exclude(pk=address.pk).order_by('-updated_at')
+            if other_active.exists():
+                new_default = other_active.first()
+                new_default.is_default = True
+                new_default.save(update_fields=['is_default'])
+        
+        # Rule 3: Soft delete
+        address.is_active = False
+        address.is_default = False
+        address.save(update_fields=['is_active', 'is_default'])
+        
+    return redirect('address_list')
+
+
 
 

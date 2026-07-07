@@ -88,8 +88,8 @@ class UserAddress(models.Model):
                     user=self.user, 
                     is_default=True
                 ).exclude(pk=self.pk).update(is_default=False)
-            # If this is the user's only address, automatically make it the default
-            elif not UserAddress.objects.filter(user=self.user).exclude(pk=self.pk).exists():
+            # If this is the user's only active address, automatically make it the default
+            elif self.is_active and not UserAddress.objects.filter(user=self.user, is_active=True).exclude(pk=self.pk).exists():
                 self.is_default = True
                 
             super().save(*args, **kwargs)

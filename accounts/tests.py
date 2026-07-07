@@ -382,5 +382,146 @@ class UserAddressEditViewTest(TestCase):
         self.assertContains(response, 'Phone number must contain only digits.')
 
 
+class UserAddressDeleteViewTest(TestCase):
+    def setUp(self):
+        self.username1 = 'testuser1'
+        self.password = 'securepassword123'
+        self.user1 = User.objects.create_user(
+            username=self.username1,
+            password=self.password,
+            email='testuser1@example.com'
+        )
+        self.username2 = 'testuser2'
+        self.user2 = User.objects.create_user(
+            username=self.username2,
+            password=self.password,
+            email='testuser2@example.com'
+        )
+        # First address (default)
+        self.addr1 = UserAddress.objects.create(
+            user=self.user1,
+            full_name='Address 1',
+            phone='9876543210',
+            address_line_1='Address Line 1',
+            city='Mumbai',
+            state='MH',
+            postal_code='400001',
+            is_default=True
+        )
+
+    def test_unauthenticated_redirect(self):
+        """Verify unauthenticated access to delete page redirects to login."""
+        response = self.client.post(f'/account/addresses/{self.addr1.id}/delete/')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/accounts/login/', response.url)
+
+    def test_get_request_returns_405(self):
+        """Verify GET requests to delete route are not allowed (405)."""
+        self.client.login(username=self.username1, password=self.password)
+        response = self.client.get(f'/account/addresses/{self.addr1.id}/delete/')
+        self.assertEqual(response.status_code, 405)
+
+    def test_delete_other_user_address_returns_404(self):
+        """Verify attempting to delete another user's address returns 404."""
+        self.client.login(username=self.username2, password=self.password)
+        response = self.client.post(f'/account/addresses/{self.addr1.id}/delete/')
+        self.assertEqual(response.status_code, 404)
+
+    def test_delete_inactive_address_returns_404(self):
+        """Verify attempting to delete an already inactive address returns 404."""
+        inactive_addr = UserAddress.objects.create(
+            user=self.user1,
+            full_name='Inactive Address',
+            phone='9876543210',
+            address_line_1='Address Line 1',
+            city='Mumbai',
+            state='MH',
+            postal_code='400001',
+            is_active=False
+        )
+        self.client.login(username=self.username1, password=self.password)
+        response = self.client.post(f'/account/addresses/{inactive_addr.id}/delete/')
+        self.assertEqual(response.status_code, 404)
+
+    def test_delete_only_address_success(self):
+        """Verify soft-deleting the user's only address sets is_active and is_default to False."""
+        self.client.login(username=self.username1, password=self.password)
+        response = self.client.post(f'/account/addresses/{self.addr1.id}/delete/')
+        self.assertRedirects(response, '/account/addresses/')
+        
+        self.addr1.refresh_from_db()
+        self.assertFalse(self.addr1.is_active)
+        self.assertFalse(self.addr1.is_default)
+
+    def test_delete_non_default_address_leaves_default_intact(self):
+        """Verify deleting a non-default address does not change default settings."""
+        self.client.login(username=self.username1, password=self.password)
+        
+        # Create a second address (non-default)
+        addr2 = UserAddress.objects.create(
+            user=self.user1,
+            full_name='Address 2',
+            phone='9876543210',
+            address_line_1='Address Line 2',
+            city='Mumbai',
+            state='MH',
+            postal_code='400001',
+            is_default=False
+        )
+        
+        response = self.client.post(f'/account/addresses/{addr2.id}/delete/')
+        self.assertRedirects(response, '/account/addresses/')
+        
+        addr2.refresh_from_db()
+        self.assertFalse(addr2.is_active)
+        
+        self.addr1.refresh_from_db()
+        self.assertTrue(self.addr1.is_active)
+        self.assertTrue(self.addr1.is_default)
+
+    def test_delete_default_address_promotes_latest_updated_active(self):
+        """Verify deleting a default address promotes the latest updated active address to default."""
+        self.client.login(username=self.username1, password=self.password)
+        
+        # Create second address (non-default)
+        addr2 = UserAddress.objects.create(
+            user=self.user1,
+            full_name='Address 2',
+            phone='9876543210',
+            address_line_1='Address Line 2',
+            city='Mumbai',
+            state='MH',
+            postal_code='400001',
+            is_default=False
+        )
+        
+        # Create third address (non-default, newer)
+        addr3 = UserAddress.objects.create(
+            user=self.user1,
+            full_name='Address 3',
+            phone='9876543210',
+            address_line_1='Address Line 3',
+            city='Mumbai',
+            state='MH',
+            postal_code='400001',
+            is_default=False
+        )
+        
+        response = self.client.post(f'/account/addresses/{self.addr1.id}/delete/')
+        self.assertRedirects(response, '/account/addresses/')
+        
+        self.addr1.refresh_from_db()
+        self.assertFalse(self.addr1.is_active)
+        self.assertFalse(self.addr1.is_default)
+        
+        addr2.refresh_from_db()
+        addr3.refresh_from_db()
+        
+        # addr3 should be promoted as default since it was updated more recently
+        self.assertTrue(addr3.is_default)
+        self.assertFalse(addr2.is_default)
+
+
+
 
 
