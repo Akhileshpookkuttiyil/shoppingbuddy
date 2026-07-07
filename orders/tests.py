@@ -3,6 +3,9 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.core.management import call_command
+from io import StringIO
+from datetime import timedelta
 from cart.models import Cart_List, Cart_Items
 from shop.models import Product, Category
 from accounts.models import UserAddress
@@ -342,6 +345,102 @@ class OrderHistoryAndDetailTest(TestCase):
         self.assertContains(response, 'Test Product')
         self.assertContains(response, 'Flat 12')
         self.assertContains(response, 'Mumbai')
+
+
+class OrderExpirationCommandTest(TestCase):
+    def setUp(self):
+        self.username = 'testuser1'
+        self.password = 'securepassword123'
+        self.user = User.objects.create_user(username=self.username, password=self.password)
+        
+        self.category = Category.objects.create(name='Electronics', slug='electronics')
+        self.product1 = Product.objects.create(
+            name='Laptop', slug='laptop', price=1000.00, stock=5, in_stock=True, category=self.category
+        )
+        self.product2 = Product.objects.create(
+            name='Phone', slug='phone', price=500.00, stock=0, in_stock=False, category=self.category
+        )
+
+        # Create expired pending order
+        self.expired_order = Order.objects.create(
+            user=self.user,
+            order_number='SB-EXPIRED-PENDING',
+            payment_method='COD',
+            status='PENDING_PAYMENT',
+            expires_at=timezone.now() - timedelta(minutes=1),
+            total_amount=1500.00
+        )
+        OrderItem.objects.create(order=self.expired_order, product=self.product1, price=1000.00, quantity=1)
+        OrderItem.objects.create(order=self.expired_order, product=self.product2, price=500.00, quantity=1)
+
+        # Create non-expired pending order
+        self.active_order = Order.objects.create(
+            user=self.user,
+            order_number='SB-ACTIVE-PENDING',
+            payment_method='COD',
+            status='PENDING_PAYMENT',
+            expires_at=timezone.now() + timedelta(minutes=20),
+            total_amount=1000.00
+        )
+        OrderItem.objects.create(order=self.active_order, product=self.product1, price=1000.00, quantity=1)
+
+        # Create expired PAID order (should remain untouched)
+        self.paid_order = Order.objects.create(
+            user=self.user,
+            order_number='SB-EXPIRED-PAID',
+            payment_method='COD',
+            status='PAID',
+            expires_at=timezone.now() - timedelta(minutes=1),
+            total_amount=1000.00
+        )
+        OrderItem.objects.create(order=self.paid_order, product=self.product1, price=1000.00, quantity=1)
+
+    def test_expire_orders_command_success(self):
+        """Verify expired pending orders are expired and inventory is restored."""
+        out = StringIO()
+        call_command('expire_orders', stdout=out)
+        output = out.getvalue()
+
+        # Check command output
+        self.assertIn("Expired orders processed: 1", output)
+        self.assertIn("Inventory restored: 2 products", output)
+
+        # Check order statuses
+        self.expired_order.refresh_from_db()
+        self.active_order.refresh_from_db()
+        self.paid_order.refresh_from_db()
+
+        self.assertEqual(self.expired_order.status, 'PAYMENT_EXPIRED')
+        self.assertEqual(self.active_order.status, 'PENDING_PAYMENT')
+        self.assertEqual(self.paid_order.status, 'PAID')
+
+        # Check product stock and availability restoration
+        self.product1.refresh_from_db()
+        self.product2.refresh_from_db()
+
+        self.assertEqual(self.product1.stock, 6)
+        self.assertTrue(self.product1.in_stock)
+
+        self.assertEqual(self.product2.stock, 1)
+        self.assertTrue(self.product2.in_stock)
+
+    def test_expire_orders_command_idempotent(self):
+        """Verify command is idempotent and doesn't restore inventory twice when run multiple times."""
+        out = StringIO()
+        call_command('expire_orders', stdout=out)
+        
+        # Second run should do nothing
+        out2 = StringIO()
+        call_command('expire_orders', stdout=out2)
+        output2 = out2.getvalue()
+
+        self.assertIn("Expired orders processed: 0", output2)
+        self.assertIn("Inventory restored: 0 products", output2)
+
+        # Check stock is not doubled
+        self.product1.refresh_from_db()
+        self.assertEqual(self.product1.stock, 6)
+
 
 
 
