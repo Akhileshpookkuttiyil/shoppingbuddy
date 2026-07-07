@@ -4,21 +4,47 @@ from shop.models import Product
 
 class Order(models.Model):
     STATUS_CHOICES = (
-        ('pending', 'Pending'),
-        ('processing', 'Processing'),
-        ('shipped', 'Shipped'),
-        ('delivered', 'Delivered'),
-        ('cancelled', 'Cancelled'),
+        ('PENDING_PAYMENT', 'Pending Payment'),
+        ('PAID', 'Paid'),
+        ('PROCESSING', 'Processing'),
+        ('SHIPPED', 'Shipped'),
+        ('DELIVERED', 'Delivered'),
+        ('CANCELLED', 'Cancelled'),
+        ('REFUNDED', 'Refunded'),
+        ('PAYMENT_FAILED', 'Payment Failed'),
+        ('PAYMENT_EXPIRED', 'Payment Expired'),
+    )
+
+    PAYMENT_CHOICES = (
+        ('COD', 'Cash on Delivery'),
+        ('RAZORPAY', 'Razorpay'),
+        ('STRIPE', 'Stripe'),
     )
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='orders')
+    order_number = models.CharField(max_length=32, unique=True, db_index=True, null=True, blank=True)
+    payment_method = models.CharField(max_length=16, choices=PAYMENT_CHOICES, default='COD')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING_PAYMENT')
+    expires_at = models.DateTimeField(null=True, blank=True)
+    
+    # Shipping Snapshot Fields
+    shipping_full_name = models.CharField(max_length=150, blank=True, null=True)
+    shipping_phone = models.CharField(max_length=15, blank=True, null=True)
+    shipping_address_line_1 = models.CharField(max_length=255, blank=True, null=True)
+    shipping_address_line_2 = models.CharField(max_length=255, blank=True, null=True)
+    shipping_landmark = models.CharField(max_length=100, blank=True, null=True)
+    shipping_city = models.CharField(max_length=100, blank=True, null=True)
+    shipping_state = models.CharField(max_length=100, blank=True, null=True)
+    shipping_country = models.CharField(max_length=100, blank=True, null=True)
+    shipping_postal_code = models.CharField(max_length=10, blank=True, null=True)
+
+    # Legacy fields (do not remove yet)
     full_name = models.CharField(max_length=100)
     email = models.EmailField()
     address = models.TextField()
     city = models.CharField(max_length=100)
     postal_code = models.CharField(max_length=20)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

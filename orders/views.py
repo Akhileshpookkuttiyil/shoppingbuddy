@@ -1,8 +1,11 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from cart.views import _get_cart
 from cart.models import Cart_Items
 from accounts.models import UserAddress
+from .services import create_order
+from .models import Order
 
 @login_required
 def checkout(request):
@@ -19,9 +22,36 @@ def checkout(request):
             total += (item.product.price * item.quantity)
             count += item.quantity
             
-    # Redirect to cart details if cart is empty
-    if not cart_items:
+    # Redirect to cart details if cart is empty on GET
+    if request.method == 'GET' and not cart_items:
         return redirect('cart_details')
+
+    if request.method == 'POST':
+        address_id = request.POST.get('shipping_address')
+        payment_method = request.POST.get('payment_method', 'COD')
+
+        if not address_id:
+            return render(request, 'checkout.html', {
+                'addresses': addresses,
+                'cart_items': cart_items,
+                'total': total,
+                'count': count,
+                'error': 'Please select a shipping address.'
+            })
+
+        try:
+            address = request.user.addresses.get(pk=address_id)
+            order = create_order(request.user, address, payment_method, request=request)
+            return redirect('order_confirmation', order_id=order.id)
+        except (ValidationError, UserAddress.DoesNotExist) as e:
+            error_msg = str(e).strip("[]'") if isinstance(e, ValidationError) else 'Selected shipping address does not exist.'
+            return render(request, 'checkout.html', {
+                'addresses': addresses,
+                'cart_items': cart_items,
+                'total': total,
+                'count': count,
+                'error': error_msg
+            })
 
     return render(request, 'checkout.html', {
         'addresses': addresses,
@@ -29,4 +59,10 @@ def checkout(request):
         'total': total,
         'count': count,
     })
+
+@login_required
+def order_confirmation(request, order_id):
+    order = get_object_or_404(Order, pk=order_id, user=request.user)
+    return render(request, 'confirmation.html', {'order': order})
+
 
