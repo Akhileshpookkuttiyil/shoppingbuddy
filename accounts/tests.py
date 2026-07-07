@@ -522,6 +522,81 @@ class UserAddressDeleteViewTest(TestCase):
         self.assertFalse(addr2.is_default)
 
 
+class UserAddressSetDefaultViewTest(TestCase):
+    def setUp(self):
+        self.username1 = 'testuser1'
+        self.password = 'securepassword123'
+        self.user1 = User.objects.create_user(
+            username=self.username1,
+            password=self.password,
+            email='testuser1@example.com'
+        )
+        self.username2 = 'testuser2'
+        self.user2 = User.objects.create_user(
+            username=self.username2,
+            password=self.password,
+            email='testuser2@example.com'
+        )
+        # First address (default)
+        self.addr1 = UserAddress.objects.create(
+            user=self.user1,
+            full_name='Address 1',
+            phone='9876543210',
+            address_line_1='Address Line 1',
+            city='Mumbai',
+            state='MH',
+            postal_code='400001',
+            is_default=True
+        )
+        # Second address (non-default)
+        self.addr2 = UserAddress.objects.create(
+            user=self.user1,
+            full_name='Address 2',
+            phone='9876543210',
+            address_line_1='Address Line 2',
+            city='Mumbai',
+            state='MH',
+            postal_code='400001',
+            is_default=False
+        )
+
+    def test_unauthenticated_redirect(self):
+        """Verify unauthenticated access redirects to login."""
+        response = self.client.post(f'/account/addresses/{self.addr2.id}/default/')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/accounts/login/', response.url)
+
+    def test_get_request_returns_405(self):
+        """Verify GET request returns 405 Method Not Allowed."""
+        self.client.login(username=self.username1, password=self.password)
+        response = self.client.get(f'/account/addresses/{self.addr2.id}/default/')
+        self.assertEqual(response.status_code, 405)
+
+    def test_set_other_user_address_default_returns_404(self):
+        """Verify user cannot set another user's address as default (404)."""
+        self.client.login(username=self.username2, password=self.password)
+        response = self.client.post(f'/account/addresses/{self.addr2.id}/default/')
+        self.assertEqual(response.status_code, 404)
+
+    def test_set_default_address_success(self):
+        """Verify user can set another address as default, toggles previous defaults, and redirects."""
+        self.client.login(username=self.username1, password=self.password)
+        response = self.client.post(f'/account/addresses/{self.addr2.id}/default/')
+        self.assertRedirects(response, '/account/addresses/')
+        
+        self.addr1.refresh_from_db()
+        self.addr2.refresh_from_db()
+        
+        # Verify changes in database
+        self.assertTrue(self.addr2.is_default)
+        self.assertFalse(self.addr1.is_default)
+        
+        # Verify only one default address exists for the user
+        default_count = UserAddress.objects.filter(user=self.user1, is_active=True, is_default=True).count()
+        self.assertEqual(default_count, 1)
+
+
+
 
 
 

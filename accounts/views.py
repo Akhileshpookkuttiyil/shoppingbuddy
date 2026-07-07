@@ -133,6 +133,17 @@ def delete_address(request, address_id):
         
     return redirect('address_list')
 
+@login_required
+@require_POST
+def set_default_address(request, address_id):
+    address = get_object_or_404(UserAddress, pk=address_id, user=request.user, is_active=True)
+    with transaction.atomic():
+        request.user.addresses.filter(is_active=True, is_default=True).update(is_default=False)
+        address.is_default = True
+        address.save()
+    return redirect('address_list')
+
+
 
 
 
