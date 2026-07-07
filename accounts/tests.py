@@ -205,3 +205,74 @@ class UserAddressListViewTest(TestCase):
         self.assertEqual(addresses_in_context[1].pk, addr1.pk)
 
 
+class UserAddressCreateViewTest(TestCase):
+    def setUp(self):
+        self.username = 'testuser'
+        self.password = 'securepassword123'
+        self.user = User.objects.create_user(
+            username=self.username,
+            password=self.password,
+            email='testuser@example.com'
+        )
+        self.add_url = '/account/addresses/add/'
+        self.list_url = '/account/addresses/'
+        self.valid_data = {
+            'full_name': 'Jane Doe',
+            'phone': '9876543210',
+            'address_line_1': 'Building B, Floor 2',
+            'address_line_2': 'Street 10',
+            'landmark': 'Opposite Library',
+            'city': 'Bangalore',
+            'state': 'Karnataka',
+            'country': 'India',
+            'postal_code': '560001',
+            'address_type': 'WORK',
+            'is_default': False,
+        }
+
+    def test_unauthenticated_redirect(self):
+        """Verify unauthenticated access to add address page redirects to login."""
+        response = self.client.get(self.add_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/accounts/login/', response.url)
+
+    def test_get_add_address_renders_form(self):
+        """Verify authenticated GET request on add address page renders form successfully."""
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.get(self.add_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Add New Address')
+        self.assertContains(response, 'csrfmiddlewaretoken')
+
+    def test_post_add_address_success(self):
+        """Verify a valid POST request saves the address and redirects."""
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.post(self.add_url, self.valid_data)
+        
+        # Should redirect to address_list
+        self.assertRedirects(response, self.list_url)
+        
+        # Verify address is saved in database
+        addresses = UserAddress.objects.filter(user=self.user)
+        self.assertEqual(addresses.count(), 1)
+        address = addresses.first()
+        self.assertEqual(address.full_name, 'Jane Doe')
+        self.assertEqual(address.phone, '9876543210')
+        self.assertEqual(address.city, 'Bangalore')
+        
+        # First address should automatically be set to default
+        self.assertTrue(address.is_default)
+
+    def test_post_add_address_failure_validation_errors(self):
+        """Verify invalid POST requests keep user on page and render errors."""
+        self.client.login(username=self.username, password=self.password)
+        invalid_data = self.valid_data.copy()
+        invalid_data['phone'] = 'abc1234567'
+        
+        response = self.client.post(self.add_url, invalid_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Phone number must contain only digits.')
+        self.assertEqual(UserAddress.objects.filter(user=self.user).count(), 0)
+
+
+

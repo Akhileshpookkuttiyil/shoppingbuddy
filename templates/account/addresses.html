@@ -8,7 +8,7 @@
   
   <div class="flex items-center justify-between border-b border-neutral-200 pb-4">
     <h1 class="text-2xl font-semibold text-neutral-900">Saved Addresses</h1>
-    <a href="#" class="inline-flex items-center gap-1.5 btn-primary btn-sm rounded-md px-3.5 py-2">
+    <a href="{% url 'add_address' %}" class="inline-flex items-center gap-1.5 btn-primary btn-sm rounded-md px-3.5 py-2">
       <i data-lucide="plus" class="w-4 h-4"></i>
       Add New Address
     </a>
@@ -17,7 +17,7 @@
   {% if not addresses %}
     <!-- Empty State -->
     <div class="card bg-white border border-neutral-100 shadow-sm rounded-xl">
-      {% include 'components/_empty_state.html' with icon="map-pin" title="No saved addresses yet." description="Add a delivery address to make checking out quick and easy." action_url="#" action_text="Add Your First Address" %}
+      {% include 'components/_empty_state.html' with icon="map-pin" title="No saved addresses yet." description="Add a delivery address to make checking out quick and easy." action_url="/account/addresses/add/" action_text="Add Your First Address" %}
     </div>
   {% else %}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

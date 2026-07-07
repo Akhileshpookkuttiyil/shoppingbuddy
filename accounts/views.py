@@ -3,7 +3,7 @@ from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.http import JsonResponse
-from .forms import RegistrationForm
+from .forms import RegistrationForm, UserAddressForm
 
 def is_ajax(request):
     return request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', '')
@@ -82,4 +82,18 @@ from django.contrib.auth.decorators import login_required
 def address_list(request):
     addresses = request.user.addresses.filter(is_active=True).order_by('-is_default', '-updated_at')
     return render(request, 'account/addresses.html', {'addresses': addresses})
+
+@login_required
+def add_address(request):
+    if request.method == 'POST':
+        form = UserAddressForm(request.POST, user=request.user)
+        if form.is_valid():
+            address = form.save(commit=False)
+            address.user = request.user
+            address.save()
+            return redirect('address_list')
+    else:
+        form = UserAddressForm(user=request.user)
+    return render(request, 'account/address_form.html', {'form': form})
+
 
