@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
+from django.urls import reverse
 from .forms import UserAddressForm
 from .models import UserAddress
 
@@ -120,4 +121,87 @@ class UserAddressFormTest(TestCase):
         
         form = UserAddressForm(data=data, instance=last_address, user=self.user)
         self.assertTrue(form.is_valid(), form.errors)
+
+
+class UserAddressListViewTest(TestCase):
+    def setUp(self):
+        self.username = 'testuser'
+        self.password = 'securepassword123'
+        self.user = User.objects.create_user(
+            username=self.username,
+            password=self.password,
+            email='testuser@example.com'
+        )
+        self.address_url = '/account/addresses/'
+
+    def test_unauthenticated_redirect(self):
+        """Verify unauthenticated access to address list redirects to login."""
+        response = self.client.get(self.address_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/accounts/login/', response.url)
+
+    def test_empty_address_list(self):
+        """Verify authenticated empty address list shows correct empty state."""
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.get(self.address_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "No saved addresses yet.")
+        self.assertContains(response, "Add Your First Address")
+
+    def test_populated_address_list_ordering(self):
+        """Verify addresses are displayed, active only, and ordered by is_default and updated_at."""
+        self.client.login(username=self.username, password=self.password)
+        
+        # Create non-default address first
+        addr1 = UserAddress.objects.create(
+            user=self.user,
+            full_name='Address One',
+            phone='9876543210',
+            address_line_1='Address Line 1-A',
+            city='Mumbai',
+            state='MH',
+            postal_code='400001',
+            is_default=False
+        )
+
+        # Create default address second
+        addr2 = UserAddress.objects.create(
+            user=self.user,
+            full_name='Address Two (Default)',
+            phone='9876543210',
+            address_line_1='Address Line 2-A',
+            city='Delhi',
+            state='DL',
+            postal_code='110001',
+            is_default=True
+        )
+
+        # Create a soft-deleted address (is_active=False)
+        addr3 = UserAddress.objects.create(
+            user=self.user,
+            full_name='Soft Deleted Address',
+            phone='9876543210',
+            address_line_1='Address Line 3-A',
+            city='Bangalore',
+            state='KA',
+            postal_code='560001',
+            is_active=False
+        )
+
+        response = self.client.get(self.address_url)
+        self.assertEqual(response.status_code, 200)
+        
+        # Verify rendered addresses
+        self.assertContains(response, 'Address One')
+        self.assertContains(response, 'Address Two (Default)')
+        self.assertNotContains(response, 'Soft Deleted Address')
+
+        # Check default badge is present
+        self.assertContains(response, 'Default')
+
+        # Check ordering is correct (addr2 first, then addr1)
+        addresses_in_context = list(response.context['addresses'])
+        self.assertEqual(addresses_in_context[0].pk, addr2.pk)
+        self.assertEqual(addresses_in_context[1].pk, addr1.pk)
+
 

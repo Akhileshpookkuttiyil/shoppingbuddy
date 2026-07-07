@@ -75,3 +75,11 @@ def register(request):
 def logout(request):
     auth_logout(request)
     return redirect('/')
+
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def address_list(request):
+    addresses = request.user.addresses.filter(is_active=True).order_by('-is_default', '-updated_at')
+    return render(request, 'account/addresses.html', {'addresses': addresses})
+
