@@ -81,11 +81,16 @@ class UserAddress(models.Model):
         ordering = ['-is_default', '-updated_at']
 
     def save(self, *args, **kwargs):
+        # An inactive address can never be default
+        if not self.is_active:
+            self.is_default = False
+
         with transaction.atomic():
-            # Enforce that only one address can be set as default per user
+            # Enforce that only one address can be set as default per user (only affecting active addresses)
             if self.is_default:
                 UserAddress.objects.filter(
                     user=self.user, 
+                    is_active=True,
                     is_default=True
                 ).exclude(pk=self.pk).update(is_default=False)
             # If this is the user's only active address, automatically make it the default
