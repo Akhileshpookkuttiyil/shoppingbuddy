@@ -24,6 +24,7 @@
       </div>
       
       {% include 'components/_pagination.html' %}
+    {% else %}
       <!-- Empty State -->
       <div class="card bg-white border border-neutral-100 shadow-sm rounded-xl">
         {% include 'components/_empty_state.html' with icon="search-x" title="No matches found" description="We couldn't find any products matching your search. Try checking your spelling or using more general terms." action_url="/" action_text="Clear Search" %}
