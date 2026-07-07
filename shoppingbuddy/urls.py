@@ -14,6 +14,7 @@ urlpatterns = [
     path('checkout/', order_views.checkout, name='checkout'),
     path('checkout/<int:order_id>/confirmation/', order_views.order_confirmation, name='order_confirmation'),
     path('account/orders/', include('orders.urls')),
+    path('payments/', include('payments.urls')),
     path('', include('shop.urls')),
 ]
 

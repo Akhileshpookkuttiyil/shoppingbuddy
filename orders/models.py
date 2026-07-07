@@ -31,8 +31,12 @@ class Order(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='orders')
     order_number = models.CharField(max_length=32, unique=True, db_index=True, null=True, blank=True)
     payment_method = models.CharField(max_length=16, choices=PAYMENT_CHOICES, default='COD')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING_PAYMENT')
-    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='PENDING')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING_PAYMENT', db_index=True)
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='PENDING', db_index=True)
+    razorpay_order_id = models.CharField(max_length=100, blank=True, null=True, db_index=True)
+    razorpay_payment_id = models.CharField(max_length=100, blank=True, null=True)
+    razorpay_signature = models.CharField(max_length=255, blank=True, null=True)
+    paid_at = models.DateTimeField(blank=True, null=True)
     expires_at = models.DateTimeField(null=True, blank=True)
     
     # Shipping Snapshot Fields

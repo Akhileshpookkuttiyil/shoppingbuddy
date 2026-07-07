@@ -93,6 +93,9 @@ def order_detail(request, order_id):
         action = request.POST.get('action', '')
         if action == 'update_payment_status':
             new_payment_status = request.POST.get('payment_status', '').strip()
+            if order.payment_method == 'RAZORPAY' and order.payment_status == 'PAID':
+                messages.error(request, "Cannot modify captured online payments.")
+                return redirect('dashboard:order_detail', order_id=order.id)
             valid_keys = [c[0] for c in Order.PAYMENT_STATUS_CHOICES]
             if new_payment_status in valid_keys:
                 order.payment_status = new_payment_status

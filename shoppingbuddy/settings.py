@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'cart.apps.CartConfig',
     'dashboard.apps.DashboardConfig',
     'orders.apps.OrdersConfig',
+    'payments.apps.PaymentsConfig',
 ]
 
 MIDDLEWARE = [
@@ -151,3 +152,7 @@ LOGGING = {
         },
     },
 }
+
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', 'test_key_id')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'test_key_secret')
+RAZORPAY_WEBHOOK_SECRET = os.environ.get('RAZORPAY_WEBHOOK_SECRET', 'test_webhook_secret')

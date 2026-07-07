@@ -23,7 +23,13 @@
       <p class="text-xs text-neutral-500 mt-1 font-medium">Placed on {{ order.created_at|date:"M d, Y H:i" }}</p>
     </div>
     
-    <div>
+    <div class="flex items-center gap-3">
+      {% if order.status == 'PAYMENT_FAILED' or order.payment_status == 'FAILED' %}
+        <a href="{% url 'payments:payment_retry' order.id %}" class="inline-flex items-center gap-1.5 btn-primary rounded-xl px-4 py-2 text-xs font-semibold shadow-md transition-all hover:scale-[1.02] active:scale-100" id="retry-payment-btn-detail">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          Retry Payment
+        </a>
+      {% endif %}
       <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
         {% if order.status == 'PAID' or order.status == 'DELIVERED' %}
           bg-green-100 text-green-800
@@ -97,6 +103,18 @@
               </span>
             </span>
           </div>
+          {% if order.razorpay_payment_id %}
+            <div class="flex items-center justify-between text-sm text-neutral-500 font-medium">
+              <span>Transaction ID</span>
+              <span class="font-bold text-neutral-800" id="transaction-id-badge">{{ order.razorpay_payment_id }}</span>
+            </div>
+          {% endif %}
+          {% if order.paid_at %}
+            <div class="flex items-center justify-between text-sm text-neutral-500 font-medium">
+              <span>Paid At</span>
+              <span class="font-bold text-neutral-800" id="paid-at-badge">{{ order.paid_at|date:"M d, Y H:i" }}</span>
+            </div>
+          {% endif %}
           <div class="flex items-center justify-between text-sm text-neutral-500 font-medium pb-2 border-b border-neutral-100">
             <span>Order Status</span>
             <span class="font-bold text-neutral-800">{{ order.get_status_display }}</span>
