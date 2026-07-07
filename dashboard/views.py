@@ -90,18 +90,30 @@ def order_detail(request, order_id):
     }
 
     if request.method == 'POST':
-        new_status = request.POST.get('status', '').strip()
-        current_status = order.status
-        allowed_next = ALLOWED_TRANSITIONS.get(current_status, [])
-
-        if new_status in allowed_next:
-            order.status = new_status
-            order.save()
-            messages.success(request, f"Order status updated to {order.get_status_display()}.")
+        action = request.POST.get('action', '')
+        if action == 'update_payment_status':
+            new_payment_status = request.POST.get('payment_status', '').strip()
+            valid_keys = [c[0] for c in Order.PAYMENT_STATUS_CHOICES]
+            if new_payment_status in valid_keys:
+                order.payment_status = new_payment_status
+                order.save()
+                messages.success(request, f"Payment status updated to {order.get_payment_status_display()}.")
+            else:
+                messages.error(request, "Invalid payment status.")
             return redirect('dashboard:order_detail', order_id=order.id)
         else:
-            messages.error(request, f"Transition from {order.get_status_display()} to {new_status} is not allowed.")
-            return redirect('dashboard:order_detail', order_id=order.id)
+            new_status = request.POST.get('status', '').strip()
+            current_status = order.status
+            allowed_next = ALLOWED_TRANSITIONS.get(current_status, [])
+
+            if new_status in allowed_next:
+                order.status = new_status
+                order.save()
+                messages.success(request, f"Order status updated to {order.get_status_display()}.")
+                return redirect('dashboard:order_detail', order_id=order.id)
+            else:
+                messages.error(request, f"Transition from {order.get_status_display()} to {new_status} is not allowed.")
+                return redirect('dashboard:order_detail', order_id=order.id)
 
     allowed_next = ALLOWED_TRANSITIONS.get(order.status, [])
     status_choices_dict = dict(Order.STATUS_CHOICES)

@@ -80,7 +80,28 @@
             <span>Payment Method</span>
             <span class="font-bold text-neutral-800">{{ order.get_payment_method_display }}</span>
           </div>
-          <div class="flex items-center justify-between text-base font-extrabold text-neutral-900 border-t border-neutral-100 pt-3.5">
+          <div class="flex items-center justify-between text-sm text-neutral-500 font-medium">
+            <span>Payment Status</span>
+            <span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider
+                {% if order.payment_status == 'PAID' %}
+                  bg-green-100 text-green-800
+                {% elif order.payment_status == 'PENDING' %}
+                  bg-yellow-100 text-yellow-800
+                {% elif order.payment_status == 'FAILED' or order.payment_status == 'REFUNDED' %}
+                  bg-red-100 text-red-800
+                {% else %}
+                  bg-neutral-100 text-neutral-800
+                {% endif %}" id="payment-status-badge">
+                {{ order.get_payment_status_display }}
+              </span>
+            </span>
+          </div>
+          <div class="flex items-center justify-between text-sm text-neutral-500 font-medium pb-2 border-b border-neutral-100">
+            <span>Order Status</span>
+            <span class="font-bold text-neutral-800">{{ order.get_status_display }}</span>
+          </div>
+          <div class="flex items-center justify-between text-base font-extrabold text-neutral-900 pt-1.5">
             <span>Total Amount</span>
             <span>₹{{ order.total_amount }}</span>
           </div>

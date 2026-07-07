@@ -8,8 +8,8 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['order_number', 'shipping_full_name', 'total_amount', 'status', 'payment_method', 'created_at']
-    list_filter = ['status', 'payment_method', 'created_at']
+    list_display = ['order_number', 'shipping_full_name', 'total_amount', 'status', 'payment_method', 'payment_status', 'created_at']
+    list_filter = ['status', 'payment_method', 'payment_status', 'created_at']
     search_fields = ['order_number', 'shipping_full_name', 'user__username', 'user__email']
     date_hierarchy = 'created_at'
     ordering = ['-created_at']

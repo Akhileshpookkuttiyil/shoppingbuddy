@@ -53,11 +53,14 @@ def create_order(user, address, payment_method='COD', request=None):
         total_amount = sum(item.product.price * item.quantity for item in cart_items)
 
         # Create Order (Step 5 & Step 6 Snapshotting)
+        status = 'PROCESSING' if payment_method == 'COD' else 'PENDING_PAYMENT'
+
         order = Order.objects.create(
             user=user,
             order_number=order_number,
             payment_method=payment_method,
-            status='PENDING_PAYMENT',
+            status=status,
+            payment_status='PENDING',
             expires_at=timezone.now() + timedelta(minutes=20),
             total_amount=total_amount,
             # Snapshot address fields

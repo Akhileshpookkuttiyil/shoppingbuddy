@@ -442,5 +442,113 @@ class OrderExpirationCommandTest(TestCase):
         self.assertEqual(self.product1.stock, 6)
 
 
+class CODPaymentFlowTest(TestCase):
+    def setUp(self):
+        self.username1 = 'testuser1'
+        self.password = 'securepassword123'
+        self.user1 = User.objects.create_user(
+            username=self.username1, password=self.password, email='user1@example.com'
+        )
+        self.addr1 = UserAddress.objects.create(
+            user=self.user1,
+            full_name='John Doe',
+            phone='9876543210',
+            address_line_1='Flat 12',
+            city='Mumbai',
+            state='MH',
+            country='India',
+            postal_code='400001',
+            is_default=True
+        )
+        self.category = Category.objects.create(name='Clothing', slug='clothing')
+        self.product = Product.objects.create(
+            name='Test Product', slug='test-product', price=100.00, stock=5, in_stock=True, category=self.category
+        )
+        self.cart_id = 'test-cart-id'
+        self.cart = Cart_List.objects.create(cart_id=self.cart_id)
+        Cart_Items.objects.create(cart=self.cart, product=self.product, quantity=2, active=True)
+
+    def _setup_session_cart(self):
+        session = self.client.session
+        session['cart_id'] = self.cart_id
+        session.save()
+
+    def test_cod_checkout_success(self):
+        """Verify COD order placement succeeds, skips payment gateway, redirects, and sets status."""
+        self.client.login(username=self.username1, password=self.password)
+        self._setup_session_cart()
+
+        # Check stock before
+        self.assertEqual(self.product.stock, 5)
+
+        response = self.client.post('/checkout/', {
+            'shipping_address': self.addr1.id,
+            'payment_method': 'COD'
+        })
+        order = Order.objects.first()
+        self.assertIsNotNone(order)
+        self.assertRedirects(response, f'/checkout/{order.id}/confirmation/')
+
+        # Order Status = PROCESSING, Payment Status = PENDING
+        self.assertEqual(order.status, 'PROCESSING')
+        self.assertEqual(order.payment_status, 'PENDING')
+
+        # Stock remains decremented (reserved) after creation
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock, 3)
+
+    def test_customer_order_detail_payment_info(self):
+        """Verify payment details are rendered properly on the customer detail page."""
+        order = Order.objects.create(
+            user=self.user1,
+            order_number='SB-20260707-333333',
+            payment_method='COD',
+            status='PROCESSING',
+            payment_status='PENDING',
+            total_amount=200.00
+        )
+        self.client.login(username=self.username1, password=self.password)
+        response = self.client.get(f'/account/orders/{order.id}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Cash on Delivery')
+        self.assertContains(response, 'Pending')
+        self.assertContains(response, 'Processing')
+
+    def test_admin_update_payment_status(self):
+        """Verify admin can change order payment status to PAID or REFUNDED."""
+        order = Order.objects.create(
+            user=self.user1,
+            order_number='SB-20260707-444444',
+            payment_method='COD',
+            status='PROCESSING',
+            payment_status='PENDING',
+            total_amount=200.00
+        )
+        staff_user = User.objects.create_user(
+            username='admin_user', password=self.password, email='admin@example.com', is_staff=True
+        )
+        self.client.login(username='admin_user', password=self.password)
+        
+        detail_url = f'/dashboard/orders/{order.id}/'
+        # Mark as PAID
+        response = self.client.post(detail_url, {
+            'action': 'update_payment_status',
+            'payment_status': 'PAID'
+        })
+        self.assertRedirects(response, detail_url)
+        order.refresh_from_db()
+        self.assertEqual(order.payment_status, 'PAID')
+
+        # Mark as REFUNDED
+        response = self.client.post(detail_url, {
+            'action': 'update_payment_status',
+            'payment_status': 'REFUNDED'
+        })
+        self.assertRedirects(response, detail_url)
+        order.refresh_from_db()
+        self.assertEqual(order.payment_status, 'REFUNDED')
+
+
+
 
 

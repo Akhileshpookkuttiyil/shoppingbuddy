@@ -21,10 +21,18 @@ class Order(models.Model):
         ('STRIPE', 'Stripe'),
     )
 
+    PAYMENT_STATUS_CHOICES = (
+        ('PENDING', 'Pending'),
+        ('PAID', 'Paid'),
+        ('FAILED', 'Failed'),
+        ('REFUNDED', 'Refunded'),
+    )
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='orders')
     order_number = models.CharField(max_length=32, unique=True, db_index=True, null=True, blank=True)
     payment_method = models.CharField(max_length=16, choices=PAYMENT_CHOICES, default='COD')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING_PAYMENT')
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='PENDING')
     expires_at = models.DateTimeField(null=True, blank=True)
     
     # Shipping Snapshot Fields
