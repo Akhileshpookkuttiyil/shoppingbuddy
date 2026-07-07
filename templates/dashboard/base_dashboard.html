@@ -40,9 +40,16 @@
                 Products
             </a>
             
-            <a href="#" class="flex items-center px-4 py-2 text-gray-300 rounded-md hover:bg-gray-700 hover:text-white">
-                <i data-lucide="shopping-bag" class="w-5 h-5 mr-3"></i>
-                Orders
+            <a href="{% url 'dashboard:order_list' %}" class="flex items-center justify-between px-4 py-2 text-gray-300 rounded-md hover:bg-gray-700 hover:text-white {% if 'orders' in request.path %}bg-gray-800 text-white font-medium{% endif %}">
+                <span class="flex items-center">
+                    <i data-lucide="shopping-bag" class="w-5 h-5 mr-3"></i>
+                    Orders
+                </span>
+                {% if pending_orders_count > 0 %}
+                    <span class="inline-flex items-center justify-center px-2 py-0.5 ml-2 text-xs font-bold leading-none text-white bg-blue-600 rounded-full" id="pending-orders-badge">
+                        {{ pending_orders_count }}
+                    </span>
+                {% endif %}
             </a>
             
             <a href="#" class="flex items-center px-4 py-2 text-gray-300 rounded-md hover:bg-gray-700 hover:text-white">
