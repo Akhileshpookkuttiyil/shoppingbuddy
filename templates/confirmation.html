@@ -111,7 +111,11 @@
         </div>
       </div>
 
-      <div class="text-center">
+      <div class="text-center flex flex-wrap items-center justify-center gap-4">
+        <a href="{% url 'order_detail' order.id %}" class="inline-flex items-center gap-1.5 px-6 py-3 border border-neutral-300 rounded-xl font-semibold text-neutral-700 hover:bg-neutral-50 shadow-sm transition-all hover:scale-[1.02] active:scale-100">
+          <i data-lucide="eye" class="w-4 h-4"></i>
+          View Order
+        </a>
         <a href="/" class="inline-flex items-center gap-1.5 btn-primary rounded-xl px-6 py-3 font-semibold shadow-md transition-all hover:scale-[1.02] active:scale-100">
           <i data-lucide="shopping-bag" class="w-4 h-4"></i>
           Continue Shopping

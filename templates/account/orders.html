@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Orders - ShoppingBuddy{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+  <div class="border-b border-neutral-200 pb-4 mb-8">
+    <h1 class="text-2xl font-bold text-neutral-900">My Orders</h1>
+    <p class="text-sm text-neutral-500 mt-1">Track your purchases and view historical transaction details.</p>
+  </div>
+
+  {% if not orders %}
+    <div class="card bg-white border border-neutral-100 shadow-sm rounded-xl">
+      {% include 'components/_empty_state.html' with icon="shopping-bag" title="No orders yet" description="Your purchases will appear here once you place an order." action_url="/" action_text="Explore Products" %}
+    </div>
+  {% else %}
+    <div class="space-y-6">
+      {% for order in orders %}
+        <div class="card bg-white border border-neutral-200 shadow-sm rounded-xl overflow-hidden hover:border-neutral-300 transition-colors">
+          <!-- Top Row Header -->
+          <div class="bg-neutral-50 px-6 py-4 border-b border-neutral-200 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+              <div>
+                <p class="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Order Number</p>
+                <p class="text-sm font-extrabold text-neutral-800">{{ order.order_number }}</p>
+              </div>
+              <div>
+                <p class="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Date Placed</p>
+                <p class="text-sm font-semibold text-neutral-600">{{ order.created_at|date:"M d, Y" }}</p>
+              </div>
+              <div>
+                <p class="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Total Amount</p>
+                <p class="text-sm font-bold text-neutral-900">₹{{ order.total_amount }}</p>
+              </div>
+              <div>
+                <p class="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Payment Method</p>
+                <p class="text-sm font-semibold text-neutral-600">{{ order.get_payment_method_display }}</p>
+              </div>
+            </div>
+
+            <div>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider
+                {% if order.status == 'PAID' or order.status == 'DELIVERED' %}
+                  bg-green-100 text-green-800
+                {% elif order.status == 'PENDING_PAYMENT' or order.status == 'PROCESSING' %}
+                  bg-yellow-100 text-yellow-800
+                {% elif order.status == 'CANCELLED' or order.status == 'PAYMENT_FAILED' or order.status == 'PAYMENT_EXPIRED' %}
+                  bg-red-100 text-red-800
+                {% else %}
+                  bg-neutral-100 text-neutral-800
+                {% endif %}">
+                {{ order.get_status_display }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Bottom Summary and Action -->
+          <div class="px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+              <!-- Inline images preview of items -->
+              <div class="flex -space-x-3 overflow-hidden pr-2">
+                {% for item in order.items.all|slice:":4" %}
+                  <div class="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-neutral-100 border border-neutral-200 overflow-hidden flex items-center justify-center">
+                    {% if item.product.image %}
+                      <img class="h-full w-full object-contain p-0.5" src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
+                    {% else %}
+                      <i data-lucide="image" class="w-3.5 h-3.5 text-neutral-300"></i>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+              <p class="text-xs text-neutral-500 font-medium">
+                Contains {{ order.items.count }} item{{ order.items.count|pluralize }}
+              </p>
+            </div>
+
+            <div>
+              <a href="{% url 'order_detail' order.id %}" class="inline-flex items-center gap-1.5 px-4 py-2 border border-neutral-300 rounded-lg text-xs font-bold text-neutral-700 hover:bg-neutral-50 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                View Details
+              </a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

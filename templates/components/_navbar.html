@@ -74,6 +74,14 @@
                class="absolute right-0 mt-2 w-48 rounded-lg shadow-md bg-white border border-neutral-200 focus:outline-none z-50"
                style="display: none;">
             <div class="py-1">
+              <a href="{% url 'order_list' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors font-medium">
+                <i data-lucide="package" class="w-4 h-4 text-neutral-400"></i>
+                My Orders
+              </a>
+              <a href="{% url 'address_list' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors font-medium border-b border-neutral-100 pb-2 mb-1">
+                <i data-lucide="map-pin" class="w-4 h-4 text-neutral-400"></i>
+                My Addresses
+              </a>
               <a href="{% url 'logout' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium">
                 <i data-lucide="log-out" class="w-4 h-4"></i>
                 Sign out
@@ -195,6 +203,16 @@
         <div class="ml-3">
           <div class="text-base font-bold text-neutral-900">{{ user.username }}</div>
         </div>
+      </div>
+      <div class="px-4 space-y-2 mb-3">
+        <a href="{% url 'order_list' %}" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium text-neutral-700 bg-white border border-neutral-200 hover:bg-neutral-50 transition-colors shadow-sm">
+          <i data-lucide="package" class="w-4 h-4 text-neutral-400"></i>
+          My Orders
+        </a>
+        <a href="{% url 'address_list' %}" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium text-neutral-700 bg-white border border-neutral-200 hover:bg-neutral-50 transition-colors shadow-sm">
+          <i data-lucide="map-pin" class="w-4 h-4 text-neutral-400"></i>
+          My Addresses
+        </a>
       </div>
       <div class="px-4">
         <a href="{% url 'logout' %}" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium text-red-600 bg-white border border-red-100 hover:bg-red-50 transition-colors shadow-sm">

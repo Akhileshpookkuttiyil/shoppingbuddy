@@ -245,3 +245,103 @@ class OrderCreationSystemTest(TestCase):
         self.assertEqual(order.payment_method, 'COD')
 
 
+class OrderHistoryAndDetailTest(TestCase):
+    def setUp(self):
+        self.username1 = 'testuser1'
+        self.username2 = 'testuser2'
+        self.password = 'securepassword123'
+        
+        self.user1 = User.objects.create_user(
+            username=self.username1, password=self.password, email='user1@example.com'
+        )
+        self.user2 = User.objects.create_user(
+            username=self.username2, password=self.password, email='user2@example.com'
+        )
+        self.category = Category.objects.create(name='Clothing', slug='clothing')
+        self.product = Product.objects.create(
+            name='Test Product', slug='test-product', price=100.00, stock=5, in_stock=True, category=self.category
+        )
+        
+        # Create orders for user1
+        self.order1 = Order.objects.create(
+            user=self.user1,
+            order_number='SB-20260707-111111',
+            payment_method='COD',
+            status='PENDING_PAYMENT',
+            total_amount=100.00,
+            shipping_full_name='John Doe',
+            shipping_phone='9876543210',
+            shipping_address_line_1='Flat 12',
+            shipping_city='Mumbai',
+            shipping_postal_code='400001'
+        )
+        self.order2 = Order.objects.create(
+            user=self.user1,
+            order_number='SB-20260707-222222',
+            payment_method='COD',
+            status='DELIVERED',
+            total_amount=200.00,
+            shipping_full_name='John Doe',
+            shipping_phone='9876543210',
+            shipping_address_line_1='Flat 12',
+            shipping_city='Mumbai',
+            shipping_postal_code='400001'
+        )
+        OrderItem.objects.create(order=self.order1, product=self.product, price=100.00, quantity=1)
+
+    def test_unauthenticated_order_list_redirect(self):
+        """Verify guest user is redirected to login from order history."""
+        response = self.client.get('/account/orders/history/')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/accounts/login/', response.url)
+
+    def test_unauthenticated_order_detail_redirect(self):
+        """Verify guest user is redirected to login from order details."""
+        response = self.client.get(f'/account/orders/{self.order1.id}/')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/accounts/login/', response.url)
+
+    def test_authenticated_user_sees_their_orders_and_newest_first(self):
+        """Verify user sees only their orders sorted newest first."""
+        self.client.login(username=self.username1, password=self.password)
+        response = self.client.get('/account/orders/history/')
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'account/orders.html')
+        
+        # Check order list contains order numbers
+        self.assertContains(response, 'SB-20260707-111111')
+        self.assertContains(response, 'SB-20260707-222222')
+        
+        # Check ordering is newest first
+        orders = list(response.context['orders'])
+        self.assertEqual(orders[0], self.order2)
+        self.assertEqual(orders[1], self.order1)
+
+    def test_user_cannot_view_another_user_order_detail(self):
+        """Verify users get 404 trying to access someone else's order detail."""
+        self.client.login(username=self.username2, password=self.password)
+        response = self.client.get(f'/account/orders/{self.order1.id}/')
+        self.assertEqual(response.status_code, 404)
+
+    def test_empty_order_list_renders_empty_state(self):
+        """Verify empty state is shown if user has zero orders."""
+        self.client.login(username=self.username2, password=self.password)
+        response = self.client.get('/account/orders/history/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "No orders yet")
+        self.assertContains(response, "Your purchases will appear here once you place an order.")
+
+    def test_order_detail_renders_items_and_snapshots(self):
+        """Verify order details page renders ordered items and address snapshot."""
+        self.client.login(username=self.username1, password=self.password)
+        response = self.client.get(f'/account/orders/{self.order1.id}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'account/order_detail.html')
+        
+        self.assertContains(response, 'SB-20260707-111111')
+        self.assertContains(response, 'Test Product')
+        self.assertContains(response, 'Flat 12')
+        self.assertContains(response, 'Mumbai')
+
+
+

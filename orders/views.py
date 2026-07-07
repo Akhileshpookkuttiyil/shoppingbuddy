@@ -65,4 +65,19 @@ def order_confirmation(request, order_id):
     order = get_object_or_404(Order, pk=order_id, user=request.user)
     return render(request, 'confirmation.html', {'order': order})
 
+@login_required
+def order_list(request):
+    orders = request.user.orders.all().prefetch_related('items__product').order_by('-created_at')
+    return render(request, 'account/orders.html', {'orders': orders})
+
+@login_required
+def order_detail(request, order_id):
+    order = get_object_or_404(
+        Order.objects.prefetch_related('items__product'),
+        pk=order_id,
+        user=request.user
+    )
+    return render(request, 'account/order_detail.html', {'order': order})
+
+
 
