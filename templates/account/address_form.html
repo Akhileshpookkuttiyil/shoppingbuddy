@@ -1,17 +1,17 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Add New Address - ShoppingBuddy{% endblock %}
+{% block title %}{% if form.instance.pk %}Edit Address{% else %}Add New Address{% endif %} - ShoppingBuddy{% endblock %}
 
 {% block content %}
 <div class="max-w-xl mx-auto py-8">
   <div class="card bg-white border border-neutral-200 shadow-sm rounded-xl p-6 md:p-8">
     <div class="border-b border-neutral-100 pb-4 mb-6">
-      <h1 class="text-xl font-bold text-neutral-900">Add New Address</h1>
-      <p class="text-xs text-neutral-500 mt-1">Please enter your delivery destination details below.</p>
+      <h1 class="text-xl font-bold text-neutral-900">{% if form.instance.pk %}Edit Address{% else %}Add New Address{% endif %}</h1>
+      <p class="text-xs text-neutral-500 mt-1">{% if form.instance.pk %}Update your delivery destination details below.{% else %}Please enter your delivery destination details below.{% endif %}</p>
     </div>
 
-    <form method="POST" action="{% url 'add_address' %}" class="space-y-5">
+    <form method="POST" action="{% if form.instance.pk %}{% url 'edit_address' form.instance.id %}{% else %}{% url 'add_address' %}{% endif %}" class="space-y-5">
       {% csrf_token %}
 
       {% if form.non_field_errors %}
@@ -127,7 +127,7 @@
           Cancel
         </a>
         <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-sm transition-colors">
-          Save Address
+          {% if form.instance.pk %}Update Address{% else %}Save Address{% endif %}
         </button>
       </div>
     </form>

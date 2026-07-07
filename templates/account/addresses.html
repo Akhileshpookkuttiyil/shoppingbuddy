@@ -64,6 +64,14 @@
               <p>{{ address.city }}, {{ address.state }} - <span class="font-semibold">{{ address.postal_code }}</span></p>
               <p class="text-xs text-neutral-400 font-medium">{{ address.country }}</p>
             </div>
+            
+            <!-- Actions Section -->
+            <div class="border-t border-neutral-100 pt-3 mt-4 flex justify-end gap-2">
+              <a href="{% url 'edit_address' address.id %}" class="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 focus:outline-none transition-colors px-2.5 py-1 rounded bg-blue-50 hover:bg-blue-100">
+                <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                Edit
+              </a>
+            </div>
           </div>
         </div>
       {% endfor %}

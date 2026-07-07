@@ -1,9 +1,10 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.http import JsonResponse
 from .forms import RegistrationForm, UserAddressForm
+from .models import UserAddress
 
 def is_ajax(request):
     return request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', '')
@@ -95,5 +96,18 @@ def add_address(request):
     else:
         form = UserAddressForm(user=request.user)
     return render(request, 'account/address_form.html', {'form': form})
+
+@login_required
+def edit_address(request, address_id):
+    address = get_object_or_404(UserAddress, pk=address_id, user=request.user, is_active=True)
+    if request.method == 'POST':
+        form = UserAddressForm(request.POST, instance=address, user=request.user)
+        if form.is_valid():
+            form.save()
+            return redirect('address_list')
+    else:
+        form = UserAddressForm(instance=address, user=request.user)
+    return render(request, 'account/address_form.html', {'form': form})
+
 
 
