@@ -70,6 +70,8 @@ def checkout(request):
         'count': count,
     })
 
+from django.core.paginator import Paginator
+
 @login_required
 def order_confirmation(request, order_id):
     order = get_object_or_404(Order, pk=order_id, user=request.user)
@@ -81,6 +83,14 @@ def order_list(request):
     return render(request, 'account/orders.html', {'orders': orders})
 
 @login_required
+def my_orders(request):
+    orders_queryset = Order.objects.filter(user=request.user).select_related('user').prefetch_related('items__product').order_by('-created_at')
+    paginator = Paginator(orders_queryset, 10)
+    page_number = request.GET.get('page')
+    orders = paginator.get_page(page_number)
+    return render(request, 'account/orders.html', {'orders': orders})
+
+@login_required
 def order_detail(request, order_id):
     order = get_object_or_404(
         Order.objects.prefetch_related('items__product'),
@@ -88,6 +98,7 @@ def order_detail(request, order_id):
         user=request.user
     )
     return render(request, 'account/order_detail.html', {'order': order})
+
 
 
 

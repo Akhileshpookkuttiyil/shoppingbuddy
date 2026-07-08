@@ -346,6 +346,109 @@ class OrderHistoryAndDetailTest(TestCase):
         self.assertContains(response, 'Flat 12')
         self.assertContains(response, 'Mumbai')
 
+    def test_order_list_pagination_and_page_2(self):
+        """Verify that order list paginates 10 orders per page and page 2 returns the rest."""
+        self.client.login(username=self.username1, password=self.password)
+        
+        # Clear existing orders to have exact counting
+        Order.objects.filter(user=self.user1).delete()
+        
+        # Create 15 orders for user1
+        for i in range(1, 16):
+            order = Order.objects.create(
+                user=self.user1,
+                order_number=f'SB-PAGINATE-{i:03d}',
+                payment_method='COD',
+                status='PENDING_PAYMENT',
+                total_amount=100.00,
+                shipping_full_name='John Doe',
+                shipping_phone='9876543210',
+                shipping_address_line_1='Flat 12',
+                shipping_city='Mumbai',
+                shipping_postal_code='400001'
+            )
+            OrderItem.objects.create(order=order, product=self.product, price=100.00, quantity=1)
+            
+        # Request page 1
+        response = self.client.get('/account/orders/')
+        self.assertEqual(response.status_code, 200)
+        
+        # Page 1 should contain 10 orders
+        page_1_orders = list(response.context['orders'])
+        self.assertEqual(len(page_1_orders), 10)
+        # Check ordering (newest first)
+        self.assertEqual(page_1_orders[0].order_number, 'SB-PAGINATE-015')
+        self.assertEqual(page_1_orders[9].order_number, 'SB-PAGINATE-006')
+        
+        # Request page 2
+        response = self.client.get('/account/orders/?page=2')
+        self.assertEqual(response.status_code, 200)
+        
+        # Page 2 should contain 5 orders
+        page_2_orders = list(response.context['orders'])
+        self.assertEqual(len(page_2_orders), 5)
+        # Check ordering (newest first)
+        self.assertEqual(page_2_orders[0].order_number, 'SB-PAGINATE-005')
+        self.assertEqual(page_2_orders[4].order_number, 'SB-PAGINATE-001')
+        
+        # Check pagination default behavior for invalid pages
+        # non-integer page should default to page 1
+        response = self.client.get('/account/orders/?page=invalid_page')
+        self.assertEqual(response.status_code, 200)
+        page_invalid_orders = list(response.context['orders'])
+        self.assertEqual(len(page_invalid_orders), 10)
+        self.assertEqual(page_invalid_orders[0].order_number, 'SB-PAGINATE-015')
+        
+        # out-of-bound page should default to the last page (page 2)
+        response = self.client.get('/account/orders/?page=999')
+        self.assertEqual(response.status_code, 200)
+        page_out_of_bound_orders = list(response.context['orders'])
+        self.assertEqual(len(page_out_of_bound_orders), 5)
+        self.assertEqual(page_out_of_bound_orders[0].order_number, 'SB-PAGINATE-005')
+
+    def test_order_list_query_optimization(self):
+        """Verify that select_related and prefetch_related are used to avoid N+1 queries."""
+        self.client.login(username=self.username1, password=self.password)
+        
+        # Clear existing orders and create a few orders
+        Order.objects.filter(user=self.user1).delete()
+        for i in range(1, 6):
+            order = Order.objects.create(
+                user=self.user1,
+                order_number=f'SB-OPT-{i}',
+                payment_method='COD',
+                status='PENDING_PAYMENT',
+                total_amount=100.00,
+                shipping_full_name='John Doe',
+                shipping_phone='9876543210',
+                shipping_address_line_1='Flat 12',
+                shipping_city='Mumbai',
+                shipping_postal_code='400001'
+            )
+            OrderItem.objects.create(order=order, product=self.product, price=100.00, quantity=1)
+        
+        from django.db import connection
+        
+        # Reset queries list to clean log
+        connection.queries_log.clear()
+        
+        response = self.client.get('/account/orders/')
+        self.assertEqual(response.status_code, 200)
+        
+        orders = response.context['orders']
+        
+        num_queries_before = len(connection.queries)
+        
+        for order in orders:
+            # Accessing items and their products should not hit the database again if prefetched
+            for item in order.items.all():
+                product_name = item.product.name
+                
+        num_queries_after = len(connection.queries)
+        
+        # The difference should be 0 because of prefetch_related
+        self.assertEqual(num_queries_after - num_queries_before, 0)
+
 
 class OrderExpirationCommandTest(TestCase):
     def setUp(self):
