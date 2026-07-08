@@ -3,6 +3,7 @@ import razorpay
 from django.conf import settings
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -87,15 +88,16 @@ def handle_payment_success(order, payment_id=None, signature=None):
     if order.payment_status == 'PAID':
         return order
 
-    order.payment_status = 'PAID'
-    order.status = 'PROCESSING'
-    if payment_id:
-        order.razorpay_payment_id = payment_id
-    if signature:
-        order.razorpay_signature = signature
-    order.paid_at = timezone.now()
-    order.save(update_fields=['payment_status', 'status', 'razorpay_payment_id', 'razorpay_signature', 'paid_at'])
-    logger.info(f"Order ID {order.id} payment successfully processed and transitioned to PROCESSING.")
+    with transaction.atomic():
+        order.payment_status = 'PAID'
+        order.status = 'PROCESSING'
+        if payment_id:
+            order.razorpay_payment_id = payment_id
+        if signature:
+            order.razorpay_signature = signature
+        order.paid_at = timezone.now()
+        order.save(update_fields=['payment_status', 'status', 'razorpay_payment_id', 'razorpay_signature', 'paid_at'])
+        logger.info(f"Order ID {order.id} payment successfully processed and transitioned to PROCESSING.")
     return order
 
 def handle_payment_failure(order):
@@ -107,8 +109,9 @@ def handle_payment_failure(order):
     if order.payment_status == 'FAILED' or order.status == 'PAYMENT_FAILED':
         return order
 
-    order.payment_status = 'FAILED'
-    order.status = 'PAYMENT_FAILED'
-    order.save(update_fields=['payment_status', 'status'])
-    logger.info(f"Order ID {order.id} payment failed and transitioned to PAYMENT_FAILED.")
+    with transaction.atomic():
+        order.payment_status = 'FAILED'
+        order.status = 'PAYMENT_FAILED'
+        order.save(update_fields=['payment_status', 'status'])
+        logger.info(f"Order ID {order.id} payment failed and transitioned to PAYMENT_FAILED.")
     return order

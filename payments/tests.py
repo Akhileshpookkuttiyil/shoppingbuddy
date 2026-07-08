@@ -610,3 +610,153 @@ class RazorpayCheckoutExperienceTest(TestCase):
         self.client.login(username=self.username, password=self.password)
         response = self.client.get(f'/payments/payment/{self.order.id}/')
         self.assertEqual(response.status_code, 400)
+
+
+class RazorpayPaymentVerificationTest(TestCase):
+    def setUp(self):
+        self.username = 'testcustomer_ver'
+        self.password = 'securepassword123'
+        self.user = User.objects.create_user(username=self.username, password=self.password, email='cust_ver@example.com')
+        self.other_user = User.objects.create_user(username='otheruser_ver', password=self.password)
+        
+        self.category = Category.objects.create(name='Electronics', slug='electronics')
+        self.product = Product.objects.create(
+            name='Smartphone', slug='smartphone', price=500.00, stock=10, in_stock=True, category=self.category
+        )
+        
+        self.order = Order.objects.create(
+            user=self.user,
+            order_number='SB-VER-001',
+            payment_method='RAZORPAY',
+            status='PENDING_PAYMENT',
+            payment_status='PENDING',
+            total_amount=500.00,
+            razorpay_order_id='order_rz_ver_123',
+            expires_at=timezone.now() + timedelta(minutes=20)
+        )
+        OrderItem.objects.create(order=self.order, product=self.product, price=500.00, quantity=1)
+        # Mock initial stock decrement
+        self.product.stock -= 1
+        self.product.save()
+
+    @patch('payments.services.client')
+    def test_successful_verification_updates(self, mock_client):
+        """Verify successful signature verification transition, fields, and redirect."""
+        mock_client.utility.verify_payment_signature.return_value = True
+        self.client.login(username=self.username, password=self.password)
+        
+        response = self.client.post('/payments/verify/', {
+            'razorpay_order_id': 'order_rz_ver_123',
+            'razorpay_payment_id': 'pay_ver_123',
+            'razorpay_signature': 'sig_ver_123'
+        })
+        
+        # Verify redirect
+        self.assertRedirects(response, f'/checkout/{self.order.id}/confirmation/')
+        
+        # Verify database fields update
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, 'PROCESSING')
+        self.assertEqual(self.order.payment_status, 'PAID')
+        self.assertEqual(self.order.razorpay_payment_id, 'pay_ver_123')
+        self.assertEqual(self.order.razorpay_signature, 'sig_ver_123')
+        self.assertIsNotNone(self.order.paid_at)
+
+        # Inventory remains reserved
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock, 9)
+
+    @patch('payments.services.client')
+    def test_invalid_signature_failed_verification(self, mock_client):
+        """Verify invalid signature transitions status to failed and redirects to confirmation."""
+        mock_client.utility.verify_payment_signature.side_effect = Exception("Invalid signature")
+        self.client.login(username=self.username, password=self.password)
+        
+        response = self.client.post('/payments/verify/', {
+            'razorpay_order_id': 'order_rz_ver_123',
+            'razorpay_payment_id': 'pay_ver_123',
+            'razorpay_signature': 'sig_invalid'
+        })
+        
+        self.assertRedirects(response, f'/checkout/{self.order.id}/confirmation/')
+        
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, 'PAYMENT_FAILED')
+        self.assertEqual(self.order.payment_status, 'FAILED')
+
+        # Stock remains reserved
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock, 9)
+
+    def test_missing_payment_fields_returns_400(self):
+        """Verify missing request fields return 400 Bad Request."""
+        self.client.login(username=self.username, password=self.password)
+        
+        # Missing signature
+        response = self.client.post('/payments/verify/', {
+            'razorpay_order_id': 'order_rz_ver_123',
+            'razorpay_payment_id': 'pay_ver_123'
+        })
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Missing required payment verification fields", response.content.decode('utf-8'))
+
+    @patch('payments.services.client')
+    def test_duplicate_verification_idempotency(self, mock_client):
+        """Verify duplicate verification is idempotent and doesn't re-run status transitions."""
+        mock_client.utility.verify_payment_signature.return_value = True
+        self.client.login(username=self.username, password=self.password)
+        
+        # First verification
+        self.client.post('/payments/verify/', {
+            'razorpay_order_id': 'order_rz_ver_123',
+            'razorpay_payment_id': 'pay_ver_123',
+            'razorpay_signature': 'sig_ver_123'
+        })
+        self.order.refresh_from_db()
+        first_paid_at = self.order.paid_at
+        
+        # Second verification
+        response = self.client.post('/payments/verify/', {
+            'razorpay_order_id': 'order_rz_ver_123',
+            'razorpay_payment_id': 'pay_ver_123',
+            'razorpay_signature': 'sig_ver_123'
+        })
+        self.assertEqual(response.status_code, 400) # Should fail as it's already in final state (PAID)
+        
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.payment_status, 'PAID')
+        self.assertEqual(self.order.paid_at, first_paid_at)
+
+    def test_already_paid_order_denied(self):
+        """Verify verification is blocked for already paid orders."""
+        self.order.status = 'PROCESSING'
+        self.order.payment_status = 'PAID'
+        self.order.save()
+        
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.post('/payments/verify/', {
+            'razorpay_order_id': 'order_rz_ver_123',
+            'razorpay_payment_id': 'pay_ver_123',
+            'razorpay_signature': 'sig_ver_123'
+        })
+        self.assertEqual(response.status_code, 400)
+
+    def test_unauthorized_verification_returns_404(self):
+        """Verify verifying someone else's order returns 404."""
+        self.client.login(username='otheruser_ver', password=self.password)
+        response = self.client.post('/payments/verify/', {
+            'razorpay_order_id': 'order_rz_ver_123',
+            'razorpay_payment_id': 'pay_ver_123',
+            'razorpay_signature': 'sig_ver_123'
+        })
+        self.assertEqual(response.status_code, 404)
+
+    def test_invalid_order_returns_404(self):
+        """Verify non-existent order ID returns 404."""
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.post('/payments/verify/', {
+            'razorpay_order_id': 'invalid_order_id_999',
+            'razorpay_payment_id': 'pay_ver_123',
+            'razorpay_signature': 'sig_ver_123'
+        })
+        self.assertEqual(response.status_code, 404)

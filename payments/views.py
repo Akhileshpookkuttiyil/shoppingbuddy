@@ -26,32 +26,40 @@ def payment_page(request, order_id):
     }
     return render(request, 'payment.html', context)
 
+from django.views.decorators.http import require_POST
+
 @csrf_exempt
+@require_POST
 @login_required
 def verify_payment(request):
     """
     Handles payment verification callback.
     """
-    if request.method == 'POST':
-        razorpay_order_id = request.POST.get('razorpay_order_id', '').strip()
-        razorpay_payment_id = request.POST.get('razorpay_payment_id', '').strip()
-        razorpay_signature = request.POST.get('razorpay_signature', '').strip()
+    razorpay_order_id = request.POST.get('razorpay_order_id', '').strip()
+    razorpay_payment_id = request.POST.get('razorpay_payment_id', '').strip()
+    razorpay_signature = request.POST.get('razorpay_signature', '').strip()
 
-        order = get_object_or_404(Order, razorpay_order_id=razorpay_order_id, user=request.user)
+    if not razorpay_order_id or not razorpay_payment_id or not razorpay_signature:
+        return HttpResponseBadRequest("Missing required payment verification fields.")
 
-        data = {
-            'razorpay_order_id': razorpay_order_id,
-            'razorpay_payment_id': razorpay_payment_id,
-            'razorpay_signature': razorpay_signature
-        }
+    order = get_object_or_404(Order, razorpay_order_id=razorpay_order_id, user=request.user)
 
-        if services.verify_razorpay_signature(data):
-            services.handle_payment_success(order, payment_id=razorpay_payment_id, signature=razorpay_signature)
-        else:
-            services.handle_payment_failure(order)
+    # Prevent verification of orders that are already paid, cancelled, expired, or refunded
+    if order.status in ['CANCELLED', 'PAYMENT_EXPIRED', 'REFUNDED'] or order.payment_status in ['PAID', 'REFUNDED'] or order.status == 'PAID':
+        return HttpResponseBadRequest("Order is in a final, cancelled, expired, already paid, or refunded state.")
 
-        return redirect('order_confirmation', order_id=order.id)
-    return redirect('order_list')
+    data = {
+        'razorpay_order_id': razorpay_order_id,
+        'razorpay_payment_id': razorpay_payment_id,
+        'razorpay_signature': razorpay_signature
+    }
+
+    if services.verify_razorpay_signature(data):
+        services.handle_payment_success(order, payment_id=razorpay_payment_id, signature=razorpay_signature)
+    else:
+        services.handle_payment_failure(order)
+
+    return redirect('order_confirmation', order_id=order.id)
 
 @login_required
 def payment_cancel(request, order_id):
