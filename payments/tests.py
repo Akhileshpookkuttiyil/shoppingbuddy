@@ -402,3 +402,121 @@ class RazorpayPaymentIntegrationTest(TestCase):
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock, 10)
         self.assertTrue(self.product.in_stock)
+
+
+class RazorpayCheckoutIntegrationTest(TestCase):
+    def setUp(self):
+        self.username = 'testcustomer_check'
+        self.password = 'securepassword123'
+        self.user = User.objects.create_user(username=self.username, password=self.password, email='cust_check@example.com')
+        self.other_user = User.objects.create_user(username='otheruser_check', password=self.password)
+        
+        self.category = Category.objects.create(name='Electronics', slug='electronics')
+        self.product = Product.objects.create(
+            name='Smartphone', slug='smartphone', price=500.00, stock=10, in_stock=True, category=self.category
+        )
+        
+        self.addr = UserAddress.objects.create(
+            user=self.user, full_name='John Doe', phone='9876543210', address_line_1='Flat 101', city='Mumbai', postal_code='400001', is_active=True
+        )
+        
+        self._setup_session_cart()
+
+    def _setup_session_cart(self):
+        from cart.models import Cart_List, Cart_Items
+        # Create a session cart
+        session = self.client.session
+        cart_list = Cart_List.objects.create(cart_id='test_cart_session_check')
+        session['cart_id'] = 'test_cart_session_check'
+        session.save()
+        Cart_Items.objects.create(product=self.product, cart=cart_list, quantity=2, active=True)
+
+    @patch('payments.services.client')
+    def test_checkout_razorpay_flow(self, mock_client):
+        """Verify selecting Razorpay creates a Razorpay order, saves id, redirects, and reserves inventory."""
+        mock_client.order.create.return_value = {'id': 'order_rz_check_777'}
+        self.client.login(username=self.username, password=self.password)
+        
+        response = self.client.post('/checkout/', {
+            'shipping_address': self.addr.id,
+            'payment_method': 'RAZORPAY'
+        })
+        
+        # Get order
+        order = Order.objects.filter(payment_method='RAZORPAY').first()
+        self.assertIsNotNone(order)
+        self.assertEqual(order.status, 'PENDING_PAYMENT')
+        self.assertEqual(order.payment_status, 'PENDING')
+        self.assertEqual(order.razorpay_order_id, 'order_rz_check_777')
+        
+        # Customer should be redirected to payment page
+        self.assertRedirects(response, f'/payments/payment/{order.id}/')
+        
+        # Stock must remain reserved (decremented from 10 to 8)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock, 8)
+
+    def test_checkout_cod_flow_remains_unchanged(self):
+        """Verify selecting Cash on Delivery redirects to confirmation without creating Razorpay order."""
+        self.client.login(username=self.username, password=self.password)
+        
+        response = self.client.post('/checkout/', {
+            'shipping_address': self.addr.id,
+            'payment_method': 'COD'
+        })
+        
+        order = Order.objects.filter(payment_method='COD').first()
+        self.assertIsNotNone(order)
+        self.assertEqual(order.status, 'PROCESSING')
+        self.assertIsNone(order.razorpay_order_id)
+        
+        self.assertRedirects(response, f'/checkout/{order.id}/confirmation/')
+        
+        # Stock must be reserved
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock, 8)
+
+    def test_payment_page_unauthorized_user_returns_404(self):
+        """Verify other users cannot access payment page (returns 404)."""
+        order = Order.objects.create(
+            user=self.user, order_number='SB-TEST-CHECK-001', payment_method='RAZORPAY', status='PENDING_PAYMENT', total_amount=100.00
+        )
+        self.client.login(username='otheruser_check', password=self.password)
+        response = self.client.get(f'/payments/payment/{order.id}/')
+        self.assertEqual(response.status_code, 404)
+
+    def test_payment_page_expired_order_cannot_be_opened(self):
+        """Verify expired orders return 400 (Bad Request)."""
+        order = Order.objects.create(
+            user=self.user, order_number='SB-TEST-CHECK-002', payment_method='RAZORPAY', status='PAYMENT_EXPIRED', total_amount=100.00
+        )
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.get(f'/payments/payment/{order.id}/')
+        self.assertEqual(response.status_code, 400)
+
+    def test_payment_page_cancelled_order_cannot_be_opened(self):
+        """Verify cancelled orders return 400 (Bad Request)."""
+        order = Order.objects.create(
+            user=self.user, order_number='SB-TEST-CHECK-003', payment_method='RAZORPAY', status='CANCELLED', total_amount=100.00
+        )
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.get(f'/payments/payment/{order.id}/')
+        self.assertEqual(response.status_code, 400)
+
+    def test_payment_page_paid_order_cannot_be_opened(self):
+        """Verify paid orders return 400 (Bad Request)."""
+        order = Order.objects.create(
+            user=self.user, order_number='SB-TEST-CHECK-004', payment_method='RAZORPAY', status='PROCESSING', payment_status='PAID', total_amount=100.00
+        )
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.get(f'/payments/payment/{order.id}/')
+        self.assertEqual(response.status_code, 400)
+
+    def test_payment_page_refunded_order_cannot_be_opened(self):
+        """Verify refunded orders return 400 (Bad Request)."""
+        order = Order.objects.create(
+            user=self.user, order_number='SB-TEST-CHECK-005', payment_method='RAZORPAY', status='REFUNDED', payment_status='REFUNDED', total_amount=100.00
+        )
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.get(f'/payments/payment/{order.id}/')
+        self.assertEqual(response.status_code, 400)

@@ -16,8 +16,8 @@ def payment_page(request, order_id):
     """
     order = get_object_or_404(Order, pk=order_id, user=request.user)
 
-    if order.status in ['CANCELLED', 'PAYMENT_EXPIRED'] or order.payment_status == 'PAID' or order.status == 'PAID':
-        return HttpResponseBadRequest("Order is in a final, cancelled, expired, or already paid state.")
+    if order.status in ['CANCELLED', 'PAYMENT_EXPIRED', 'REFUNDED'] or order.payment_status in ['PAID', 'REFUNDED'] or order.status == 'PAID':
+        return HttpResponseBadRequest("Order is in a final, cancelled, expired, already paid, or refunded state.")
 
     context = {
         'order': order,
