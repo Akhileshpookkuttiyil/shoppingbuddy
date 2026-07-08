@@ -1,12 +1,16 @@
 import json
+import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, HttpResponseForbidden, HttpResponseBadRequest
 from django.conf import settings
 from django.utils import timezone
+from django.db import transaction
 from orders.models import Order
 from . import services
+
+logger = logging.getLogger(__name__)
 
 @login_required
 def payment_page(request, order_id):
@@ -97,49 +101,119 @@ def razorpay_webhook(request):
     """
     Idempotent webhook handler with signature verification.
     """
-    signature = request.headers.get('X-Razorpay-Signature', '')
-    body = request.body.decode('utf-8')
-    secret = settings.RAZORPAY_WEBHOOK_SECRET
+    if request.method != 'POST':
+        logger.warning(f"Webhook received with invalid method: {request.method}")
+        return HttpResponse("Method Not Allowed", status=405)
 
+    signature = request.headers.get('X-Razorpay-Signature', '')
+    if not signature:
+        logger.warning("Webhook signature header is missing.")
+        return HttpResponse("Missing Webhook Signature", status=400)
+
+    body = request.body.decode('utf-8')
+    
+    # Try fetching webhook secret and client dynamically
     try:
-        services.client.utility.verify_webhook_signature(body, signature, secret)
-    except Exception:
+        client = services.get_razorpay_client()
+        secret = settings.RAZORPAY_WEBHOOK_SECRET
+    except Exception as e:
+        logger.exception("Failed to initialize client or settings during webhook processing.")
+        return HttpResponse("Configuration Error", status=500)
+
+    # Verify signature
+    try:
+        client.utility.verify_webhook_signature(body, signature, secret)
+    except Exception as e:
+        logger.warning(f"Webhook signature verification failed: {str(e)}")
         return HttpResponse("Invalid Webhook Signature", status=400)
 
+    # Parse JSON body
     try:
         event_data = json.loads(body)
     except json.JSONDecodeError:
+        logger.warning("Webhook payload is not valid JSON.")
         return HttpResponse("Invalid JSON payload", status=400)
 
     event = event_data.get('event')
     payload = event_data.get('payload', {})
+    
+    if not event:
+        logger.warning("Webhook payload is missing 'event' key.")
+        return HttpResponse("Missing event key", status=400)
 
+    logger.info(f"Processing Razorpay webhook event: {event}")
+
+    # Handle events
     if event in ['payment.captured', 'payment.authorized']:
         payment = payload.get('payment', {}).get('entity', {})
         razorpay_order_id = payment.get('order_id')
         razorpay_payment_id = payment.get('id')
-        
+        razorpay_signature = payment.get('signature', '')
+
+        if not razorpay_order_id or not razorpay_payment_id:
+            logger.warning(f"Webhook {event} missing order_id or payment_id.")
+            return HttpResponse("Missing payload fields", status=400)
+
         order = Order.objects.filter(razorpay_order_id=razorpay_order_id).first()
-        if order:
-            services.handle_payment_success(order, payment_id=razorpay_payment_id)
+        if not order:
+            logger.warning(f"Order not found for razorpay_order_id: {razorpay_order_id}")
+            return HttpResponse("Order not found", status=404)
+
+        # Idempotency check: Already processed
+        if order.payment_status == 'PAID' or order.status == 'PAID':
+            logger.info(f"Order {order.id} is already marked as PAID. Ignoring duplicate event {event}.")
+            return HttpResponse("Duplicate event ignored", status=200)
+
+        services.handle_payment_success(order, payment_id=razorpay_payment_id, signature=razorpay_signature)
+        logger.info(f"Webhook {event} successfully processed for Order {order.id}.")
             
     elif event == 'payment.failed':
         payment = payload.get('payment', {}).get('entity', {})
         razorpay_order_id = payment.get('order_id')
         
+        if not razorpay_order_id:
+            logger.warning("Webhook payment.failed missing razorpay_order_id.")
+            return HttpResponse("Missing payload fields", status=400)
+
         order = Order.objects.filter(razorpay_order_id=razorpay_order_id).first()
-        if order:
-            services.handle_payment_failure(order)
+        if not order:
+            logger.warning(f"Order not found for razorpay_order_id: {razorpay_order_id}")
+            return HttpResponse("Order not found", status=404)
+
+        # Idempotency check: Already failed
+        if order.payment_status == 'FAILED' or order.status == 'PAYMENT_FAILED':
+            logger.info(f"Order {order.id} already failed. Ignoring duplicate event {event}.")
+            return HttpResponse("Duplicate event ignored", status=200)
+
+        services.handle_payment_failure(order)
+        logger.info(f"Webhook {event} successfully processed for Order {order.id}.")
             
     elif event == 'refund.processed':
         refund = payload.get('refund', {}).get('entity', {})
         payment_id = refund.get('payment_id')
         
+        if not payment_id:
+            logger.warning("Webhook refund.processed missing payment_id.")
+            return HttpResponse("Missing payload fields", status=400)
+
         order = Order.objects.filter(razorpay_payment_id=payment_id).first()
-        if order:
-            if order.payment_status != 'REFUNDED':
-                order.payment_status = 'REFUNDED'
-                order.status = 'REFUNDED'
-                order.save(update_fields=['payment_status', 'status'])
+        if not order:
+            logger.warning(f"Order not found for razorpay_payment_id: {payment_id}")
+            return HttpResponse("Order not found", status=404)
+
+        # Idempotency check: Already refunded
+        if order.payment_status == 'REFUNDED' or order.status == 'REFUNDED':
+            logger.info(f"Order {order.id} already refunded. Ignoring duplicate event {event}.")
+            return HttpResponse("Duplicate event ignored", status=200)
+
+        with transaction.atomic():
+            order.payment_status = 'REFUNDED'
+            order.status = 'REFUNDED'
+            order.save(update_fields=['payment_status', 'status'])
+        logger.info(f"Webhook refund.processed successfully processed for Order {order.id}.")
+        
+    else:
+        logger.info(f"Ignored unsupported webhook event: {event}")
+        return HttpResponse("Unsupported event ignored", status=200)
 
     return HttpResponse("OK", status=200)

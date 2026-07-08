@@ -760,3 +760,280 @@ class RazorpayPaymentVerificationTest(TestCase):
             'razorpay_signature': 'sig_ver_123'
         })
         self.assertEqual(response.status_code, 404)
+
+
+class RazorpayWebhookVerificationTest(TestCase):
+    def setUp(self):
+        self.username = 'testcustomer_web'
+        self.password = 'securepassword123'
+        self.user = User.objects.create_user(username=self.username, password=self.password, email='cust_web@example.com')
+        
+        self.category = Category.objects.create(name='Electronics', slug='electronics')
+        self.product = Product.objects.create(
+            name='Smartphone', slug='smartphone', price=500.00, stock=10, in_stock=True, category=self.category
+        )
+        
+        self.order = Order.objects.create(
+            user=self.user,
+            order_number='SB-WEB-001',
+            payment_method='RAZORPAY',
+            status='PENDING_PAYMENT',
+            payment_status='PENDING',
+            total_amount=500.00,
+            razorpay_order_id='order_rz_web_123',
+            expires_at=timezone.now() + timedelta(minutes=20)
+        )
+        OrderItem.objects.create(order=self.order, product=self.product, price=500.00, quantity=1)
+        # Mock initial stock decrement
+        self.product.stock -= 1
+        self.product.save()
+
+    @patch('payments.services.client')
+    def test_webhook_payment_captured(self, mock_client):
+        """Verify payment.captured webhook captures payment, transitions status, and leaves stock reserved."""
+        mock_client.utility.verify_webhook_signature.return_value = True
+        payload = {
+            'event': 'payment.captured',
+            'payload': {
+                'payment': {
+                    'entity': {
+                        'order_id': 'order_rz_web_123',
+                        'id': 'pay_web_123',
+                        'signature': 'sig_web_123'
+                    }
+                }
+            }
+        }
+        
+        response = self.client.post(
+            '/payments/webhook/razorpay/',
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_X_RAZORPAY_SIGNATURE='valid_signature'
+        )
+        self.assertEqual(response.status_code, 200)
+        
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, 'PROCESSING')
+        self.assertEqual(self.order.payment_status, 'PAID')
+        self.assertEqual(self.order.razorpay_payment_id, 'pay_web_123')
+        self.assertEqual(self.order.razorpay_signature, 'sig_web_123')
+        
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock, 9) # remains reserved
+
+    @patch('payments.services.client')
+    def test_webhook_payment_authorized(self, mock_client):
+        """Verify payment.authorized transitions status to PAID and PROCESSING."""
+        mock_client.utility.verify_webhook_signature.return_value = True
+        payload = {
+            'event': 'payment.authorized',
+            'payload': {
+                'payment': {
+                    'entity': {
+                        'order_id': 'order_rz_web_123',
+                        'id': 'pay_web_123',
+                        'signature': 'sig_web_123'
+                    }
+                }
+            }
+        }
+        
+        response = self.client.post(
+            '/payments/webhook/razorpay/',
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_X_RAZORPAY_SIGNATURE='valid_signature'
+        )
+        self.assertEqual(response.status_code, 200)
+        
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, 'PROCESSING')
+        self.assertEqual(self.order.payment_status, 'PAID')
+
+    @patch('payments.services.client')
+    def test_webhook_payment_failed(self, mock_client):
+        """Verify payment.failed transitions status to FAILED and doesn't restore stock."""
+        mock_client.utility.verify_webhook_signature.return_value = True
+        payload = {
+            'event': 'payment.failed',
+            'payload': {
+                'payment': {
+                    'entity': {
+                        'order_id': 'order_rz_web_123'
+                    }
+                }
+            }
+        }
+        
+        response = self.client.post(
+            '/payments/webhook/razorpay/',
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_X_RAZORPAY_SIGNATURE='valid_signature'
+        )
+        self.assertEqual(response.status_code, 200)
+        
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, 'PAYMENT_FAILED')
+        self.assertEqual(self.order.payment_status, 'FAILED')
+        
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock, 9) # remains reserved
+
+    @patch('payments.services.client')
+    def test_webhook_refund_processed(self, mock_client):
+        """Verify refund.processed transitions status to REFUNDED."""
+        mock_client.utility.verify_webhook_signature.return_value = True
+        self.order.razorpay_payment_id = 'pay_web_refund_123'
+        self.order.payment_status = 'PAID'
+        self.order.status = 'PROCESSING'
+        self.order.save()
+        
+        payload = {
+            'event': 'refund.processed',
+            'payload': {
+                'refund': {
+                    'entity': {
+                        'payment_id': 'pay_web_refund_123'
+                    }
+                }
+            }
+        }
+        
+        response = self.client.post(
+            '/payments/webhook/razorpay/',
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_X_RAZORPAY_SIGNATURE='valid_signature'
+        )
+        self.assertEqual(response.status_code, 200)
+        
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, 'REFUNDED')
+        self.assertEqual(self.order.payment_status, 'REFUNDED')
+
+    @patch('payments.services.client')
+    def test_webhook_invalid_signature(self, mock_client):
+        """Verify invalid signatures return 400 Bad Request."""
+        mock_client.utility.verify_webhook_signature.side_effect = Exception("Invalid signature")
+        payload = {'event': 'payment.captured'}
+        
+        response = self.client.post(
+            '/payments/webhook/razorpay/',
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_X_RAZORPAY_SIGNATURE='invalid_sig'
+        )
+        self.assertEqual(response.status_code, 400)
+
+    @patch('payments.services.client')
+    def test_webhook_duplicate_delivery_idempotency(self, mock_client):
+        """Verify duplicate webhook deliveries are ignored gracefully without re-processing."""
+        mock_client.utility.verify_webhook_signature.return_value = True
+        payload = {
+            'event': 'payment.captured',
+            'payload': {
+                'payment': {
+                    'entity': {
+                        'order_id': 'order_rz_web_123',
+                        'id': 'pay_web_123',
+                        'signature': 'sig_web_123'
+                    }
+                }
+            }
+        }
+        
+        # First send
+        res1 = self.client.post(
+            '/payments/webhook/razorpay/',
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_X_RAZORPAY_SIGNATURE='valid_signature'
+        )
+        self.assertEqual(res1.status_code, 200)
+        self.order.refresh_from_db()
+        first_paid_at = self.order.paid_at
+        
+        # Duplicate send
+        res2 = self.client.post(
+            '/payments/webhook/razorpay/',
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_X_RAZORPAY_SIGNATURE='valid_signature'
+        )
+        self.assertEqual(res2.status_code, 200)
+        self.assertIn("Duplicate event ignored", res2.content.decode('utf-8'))
+        
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.paid_at, first_paid_at)
+
+    @patch('payments.services.client')
+    def test_webhook_unknown_event(self, mock_client):
+        """Verify unknown/unsupported events are ignored gracefully (returns 200)."""
+        mock_client.utility.verify_webhook_signature.return_value = True
+        payload = {'event': 'payment.disputed'}
+        
+        response = self.client.post(
+            '/payments/webhook/razorpay/',
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_X_RAZORPAY_SIGNATURE='valid_signature'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Unsupported event ignored", response.content.decode('utf-8'))
+
+    @patch('payments.services.client')
+    def test_webhook_malformed_payload(self, mock_client):
+        """Verify malformed JSON payload returns 400."""
+        mock_client.utility.verify_webhook_signature.return_value = True
+        response = self.client.post(
+            '/payments/webhook/razorpay/',
+            data="not-a-json-string",
+            content_type='application/json',
+            HTTP_X_RAZORPAY_SIGNATURE='valid_signature'
+        )
+        self.assertEqual(response.status_code, 400)
+
+    @patch('payments.services.client')
+    def test_webhook_missing_fields(self, mock_client):
+        """Verify missing payload fields (e.g. order_id) returns 400."""
+        mock_client.utility.verify_webhook_signature.return_value = True
+        payload = {
+            'event': 'payment.captured',
+            'payload': {
+                'payment': {
+                    'entity': {} # missing order_id & id
+                }
+            }
+        }
+        response = self.client.post(
+            '/payments/webhook/razorpay/',
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_X_RAZORPAY_SIGNATURE='valid_signature'
+        )
+        self.assertEqual(response.status_code, 400)
+
+    @patch('payments.services.client')
+    def test_webhook_non_existent_order(self, mock_client):
+        """Verify event with non-existent order returns 404."""
+        mock_client.utility.verify_webhook_signature.return_value = True
+        payload = {
+            'event': 'payment.captured',
+            'payload': {
+                'payment': {
+                    'entity': {
+                        'order_id': 'non_existent_order_id',
+                        'id': 'pay_web_123'
+                    }
+                }
+            }
+        }
+        response = self.client.post(
+            '/payments/webhook/razorpay/',
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_X_RAZORPAY_SIGNATURE='valid_signature'
+        )
+        self.assertEqual(response.status_code, 404)

@@ -21,6 +21,10 @@ def get_razorpay_client():
     Raises:
         ValidationError: If any of the required settings are missing or invalid.
     """
+    global client
+    if client is not None:
+        return client
+
     key_id = getattr(settings, 'RAZORPAY_KEY_ID', None)
     key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', None)
     webhook_secret = getattr(settings, 'RAZORPAY_WEBHOOK_SECRET', None)
