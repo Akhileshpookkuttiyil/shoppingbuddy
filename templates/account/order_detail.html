@@ -99,6 +99,125 @@
         </div>
       </div>
 
+      <!-- Return or Cancel Action Card -->
+      {% if order.status == 'PENDING_PAYMENT' or order.status == 'PAYMENT_FAILED' %}
+        <div class="card bg-white border border-neutral-200 rounded-2xl shadow-sm p-6">
+          <h2 class="text-base font-bold text-neutral-900 border-b border-neutral-100 pb-4 mb-4 flex items-center gap-2">
+            <i data-lucide="x-circle" class="w-5 h-5 text-red-600"></i>
+            Cancel Order
+          </h2>
+          <p class="text-xs text-neutral-500 mb-4 font-normal">You can cancel this order before payment is finalized or if payment has failed. Stock reservations will be released back immediately.</p>
+          <form method="POST" action="{% url 'returns:cancel_order' order.id %}">
+            {% csrf_token %}
+            <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg transition duration-200">
+              Cancel Order
+            </button>
+          </form>
+        </div>
+      {% endif %}
+
+      {% if order.status == 'DELIVERED' %}
+        {% if not order.return_requests.all %}
+          <div class="card bg-white border border-neutral-200 rounded-2xl shadow-sm p-6">
+            <h2 class="text-base font-bold text-neutral-900 border-b border-neutral-100 pb-4 mb-4 flex items-center gap-2">
+              <i data-lucide="rotate-ccw" class="w-5 h-5 text-blue-600"></i>
+              Request Return
+            </h2>
+            <form method="POST" action="{% url 'returns:request_return' order.id %}" enctype="multipart/form-data" class="space-y-4">
+              {% csrf_token %}
+              
+              <div>
+                <label class="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Scope of Return</label>
+                <select name="order_item_id" class="w-full text-sm border border-neutral-200 rounded-lg p-2.5 bg-white focus:outline-none focus:border-blue-500">
+                  <option value="">Entire Order</option>
+                  {% for item in order_items %}
+                    <option value="{{ item.id }}">{{ item.product.name }} (Qty: {{ item.quantity }})</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Reason for Return</label>
+                <select name="reason" required class="w-full text-sm border border-neutral-200 rounded-lg p-2.5 bg-white focus:outline-none focus:border-blue-500">
+                  <option value="DAMAGED">Damaged</option>
+                  <option value="WRONG_ITEM">Wrong Item</option>
+                  <option value="DEFECTIVE">Defective</option>
+                  <option value="NOT_AS_DESCRIBED">Not as Described</option>
+                  <option value="QUALITY_ISSUE">Quality Issue</option>
+                  <option value="SIZE_ISSUE">Size Issue</option>
+                  <option value="CHANGED_MIND">Changed Mind</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Description</label>
+                <textarea name="description" rows="3" required placeholder="Describe the issue with the product..." class="w-full text-sm border border-neutral-200 rounded-lg p-2.5 bg-white focus:outline-none focus:border-blue-500"></textarea>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Upload Images</label>
+                <input type="file" name="images" multiple accept="image/*" class="w-full text-xs text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+              </div>
+
+              <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg transition duration-200">
+                Submit Return Request
+              </button>
+            </form>
+          </div>
+        {% endif %}
+      {% endif %}
+
+      <!-- Show Return Requests if they exist -->
+      {% if order.return_requests.all %}
+        <div class="card bg-white border border-neutral-200 rounded-2xl shadow-sm p-6">
+          <h2 class="text-base font-bold text-neutral-900 border-b border-neutral-100 pb-4 mb-4 flex items-center gap-2">
+            <i data-lucide="history" class="w-5 h-5 text-blue-600"></i>
+            Return Request History
+          </h2>
+          <div class="space-y-6">
+            {% for req in order.return_requests.all %}
+              <div class="border-b border-neutral-100 pb-4 last:border-0 last:pb-0">
+                <div class="flex items-center justify-between gap-4">
+                  <span class="text-sm font-bold text-neutral-800">Request #{{ req.id }}</span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border
+                    {% if req.status == 'REFUNDED' %}
+                      bg-green-50 text-green-700 border-green-200
+                    {% elif req.status == 'REQUESTED' or req.status == 'UNDER_REVIEW' or req.status == 'APPROVED' or req.status == 'REFUND_PROCESSING' %}
+                      bg-yellow-50 text-yellow-700 border-yellow-200
+                    {% elif req.status == 'REJECTED' or req.status == 'CANCELLED' %}
+                      bg-red-50 text-red-700 border-red-200
+                    {% else %}
+                      bg-neutral-50 text-neutral-700 border-neutral-200
+                    {% endif %}">
+                    {{ req.get_status_display }}
+                  </span>
+                </div>
+                <p class="text-xs text-neutral-500 mt-2 font-normal">Reason: <strong>{{ req.get_reason_display }}</strong></p>
+                <p class="text-xs text-neutral-600 mt-1 font-normal bg-neutral-50 p-2 rounded-lg border border-neutral-100">{{ req.description }}</p>
+                
+                {% if req.admin_notes %}
+                  <p class="text-xs text-red-600 bg-red-50 p-2 rounded-lg border border-red-100 mt-2 font-normal">
+                    <strong>Admin Notes:</strong> {{ req.admin_notes }}
+                  </p>
+                {% endif %}
+                
+                <!-- Display Attachments -->
+                {% if req.attachments.all %}
+                  <div class="flex gap-2 mt-3 flex-wrap">
+                    {% for attach in req.attachments.all %}
+                      <a href="{{ attach.image.url }}" target="_blank" class="w-12 h-12 rounded border border-neutral-200 overflow-hidden bg-neutral-50 flex-shrink-0">
+                        <img src="{{ attach.image.url }}" alt="Return Attachment" class="w-full h-full object-cover">
+                      </a>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
       <!-- Section 3: Ordered Products -->
       <div class="card bg-white border border-neutral-200 rounded-2xl shadow-sm p-6">
         <h2 class="text-base font-bold text-neutral-900 border-b border-neutral-100 pb-4 mb-4 flex items-center gap-2">

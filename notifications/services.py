@@ -72,3 +72,38 @@ def send_refund_email(order):
     subject = f"Refund Processed - Order {order.order_number}"
     context = _get_order_context(order)
     return _send_email_safe(subject, 'emails/refund_processed.html', context, recipient)
+
+def send_return_requested_email(order):
+    """Sends return requested notification."""
+    recipient = order.user.email if order.user else 'customer@example.com'
+    subject = f"Return Requested - Order {order.order_number}"
+    context = _get_order_context(order)
+    return _send_email_safe(subject, 'emails/return_requested.html', context, recipient)
+
+def send_return_approved_email(order):
+    """Sends return approved notification."""
+    recipient = order.user.email if order.user else 'customer@example.com'
+    subject = f"Return Approved - Order {order.order_number}"
+    context = _get_order_context(order)
+    return _send_email_safe(subject, 'emails/return_approved.html', context, recipient)
+
+def send_return_rejected_email(order):
+    """Sends return rejected notification."""
+    recipient = order.user.email if order.user else 'customer@example.com'
+    subject = f"Return Rejected - Order {order.order_number}"
+    context = _get_order_context(order)
+    return _send_email_safe(subject, 'emails/return_rejected.html', context, recipient)
+
+def send_refund_started_email(order):
+    """Sends refund initiated notification."""
+    recipient = order.user.email if order.user else 'customer@example.com'
+    subject = f"Refund Started - Order {order.order_number}"
+    context = _get_order_context(order)
+    return _send_email_safe(subject, 'emails/refund_started.html', context, recipient)
+
+def send_refund_completed_email(order):
+    """Sends refund completed notification."""
+    recipient = order.user.email if order.user else 'customer@example.com'
+    subject = f"Refund Completed - Order {order.order_number}"
+    context = _get_order_context(order)
+    return _send_email_safe(subject, 'emails/refund_completed.html', context, recipient)

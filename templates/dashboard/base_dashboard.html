@@ -40,7 +40,7 @@
                 Products
             </a>
             
-            <a href="{% url 'dashboard:order_list' %}" class="flex items-center justify-between px-4 py-2 text-gray-300 rounded-md hover:bg-gray-700 hover:text-white {% if 'orders' in request.path %}bg-gray-800 text-white font-medium{% endif %}">
+            <a href="{% url 'dashboard:order_list' %}" class="flex items-center justify-between px-4 py-2 text-gray-300 rounded-md hover:bg-gray-700 hover:text-white {% if 'orders' in request.path and 'returns' not in request.path %}bg-gray-800 text-white font-medium{% endif %}">
                 <span class="flex items-center">
                     <i data-lucide="shopping-bag" class="w-5 h-5 mr-3"></i>
                     Orders
@@ -50,6 +50,11 @@
                         {{ pending_orders_count }}
                     </span>
                 {% endif %}
+            </a>
+
+            <a href="{% url 'returns_admin:list' %}" class="flex items-center px-4 py-2 text-gray-300 rounded-md hover:bg-gray-700 hover:text-white {% if 'returns' in request.path %}bg-gray-800 text-white font-medium{% endif %}">
+                <i data-lucide="rotate-ccw" class="w-5 h-5 mr-3"></i>
+                Returns
             </a>
             
             <a href="#" class="flex items-center px-4 py-2 text-gray-300 rounded-md hover:bg-gray-700 hover:text-white">
