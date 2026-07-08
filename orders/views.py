@@ -52,6 +52,8 @@ def checkout(request):
                     raise ValidationError(f"Failed to initialize payment gateway: {str(ex)}")
                 return redirect('payments:payment_page', order_id=order.id)
             else:
+                from notifications.services import send_order_confirmation_email
+                send_order_confirmation_email(order)
                 return redirect('order_confirmation', order_id=order.id)
         except (ValidationError, UserAddress.DoesNotExist) as e:
             error_msg = str(e).strip("[]'") if isinstance(e, ValidationError) else 'Selected shipping address does not exist.'

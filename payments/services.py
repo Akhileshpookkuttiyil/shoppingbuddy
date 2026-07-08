@@ -102,6 +102,13 @@ def handle_payment_success(order, payment_id=None, signature=None):
         order.paid_at = timezone.now()
         order.save(update_fields=['payment_status', 'status', 'razorpay_payment_id', 'razorpay_signature', 'paid_at'])
         logger.info(f"Order ID {order.id} payment successfully processed and transitioned to PROCESSING.")
+    
+    try:
+        from notifications.services import send_payment_success_email
+        send_payment_success_email(order)
+    except Exception as e:
+        logger.exception(f"Error sending payment success email: {str(e)}")
+        
     return order
 
 def handle_payment_failure(order):
@@ -118,4 +125,11 @@ def handle_payment_failure(order):
         order.status = 'PAYMENT_FAILED'
         order.save(update_fields=['payment_status', 'status'])
         logger.info(f"Order ID {order.id} payment failed and transitioned to PAYMENT_FAILED.")
+        
+    try:
+        from notifications.services import send_payment_failed_email
+        send_payment_failed_email(order)
+    except Exception as e:
+        logger.exception(f"Error sending payment failure email: {str(e)}")
+        
     return order

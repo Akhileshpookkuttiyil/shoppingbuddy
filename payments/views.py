@@ -224,6 +224,13 @@ def razorpay_webhook(request):
             order.payment_status = 'REFUNDED'
             order.status = 'REFUNDED'
             order.save(update_fields=['payment_status', 'status'])
+            
+        try:
+            from notifications.services import send_refund_email
+            send_refund_email(order)
+        except Exception as e:
+            logger.exception(f"Error sending refund email: {str(e)}")
+
         logger.info(f"Webhook refund.processed successfully processed for Order {order.id}.")
         
     else:

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Order Confirmation</title>
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f7; color: #51545e; margin: 0; padding: 0; -webkit-text-size-adjust: none;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; background-color: #f4f4f7; padding: 20px 0;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 570px; background-color: #ffffff; border: 1px solid #e8e8f1; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+          <!-- Header -->
+          <tr>
+            <td style="background-color: #2563eb; padding: 25px; text-align: center; color: #ffffff;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: bold; font-family: inherit;">ShoppingBuddy</h1>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding: 30px;">
+              <h2 style="color: #1f2937; font-size: 18px; margin-top: 0; margin-bottom: 10px; font-family: inherit;">Order Confirmed!</h2>
+              <p style="font-size: 14px; line-height: 1.5; color: #6b7280; margin-bottom: 20px;">Hi {{ order.shipping_full_name }}, thank you for shopping with us. Your order has been successfully placed. Below are the order details.</p>
+              
+              <!-- Order Summary Block -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f9fafb; border-radius: 6px; padding: 15px; margin-bottom: 20px; font-size: 13px;">
+                <tr>
+                  <td style="padding: 4px 0; color: #9ca3af; font-weight: bold;">Order Number:</td>
+                  <td style="padding: 4px 0; text-align: right; color: #374151; font-weight: bold;">{{ order.order_number }}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 4px 0; color: #9ca3af; font-weight: bold;">Order Status:</td>
+                  <td style="padding: 4px 0; text-align: right;"><span style="background-color: #e0f2fe; color: #075985; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase;">{{ order.status }}</span></td>
+                </tr>
+                <tr>
+                  <td style="padding: 4px 0; color: #9ca3af; font-weight: bold;">Payment Method:</td>
+                  <td style="padding: 4px 0; text-align: right; color: #374151; font-weight: bold;">{{ order.payment_method }}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 4px 0; color: #9ca3af; font-weight: bold;">Payment Status:</td>
+                  <td style="padding: 4px 0; text-align: right;"><span style="background-color: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase;">{{ order.payment_status }}</span></td>
+                </tr>
+                <tr>
+                  <td style="padding: 4px 0; color: #9ca3af; font-weight: bold; font-size: 14px;">Total Amount:</td>
+                  <td style="padding: 4px 0; text-align: right; color: #111827; font-weight: 800; font-size: 15px;">₹{{ order.total_amount }}</td>
+                </tr>
+              </table>
+
+              <!-- Items Table -->
+              <h3 style="font-size: 14px; color: #1f2937; margin-top: 25px; margin-bottom: 10px; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px;">Ordered Items</h3>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+                <thead>
+                  <tr style="border-bottom: 2px solid #e5e7eb;">
+                    <th align="left" style="padding: 8px; font-size: 12px; color: #4b5563; text-transform: uppercase;">Item Name</th>
+                    <th align="center" style="padding: 8px; font-size: 12px; color: #4b5563; text-transform: uppercase;">Qty</th>
+                    <th align="right" style="padding: 8px; font-size: 12px; color: #4b5563; text-transform: uppercase;">Price</th>
+                    <th align="right" style="padding: 8px; font-size: 12px; color: #4b5563; text-transform: uppercase;">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in items %}
+                  <tr style="border-bottom: 1px solid #f3f4f6;">
+                    <td align="left" style="padding: 8px; font-size: 13px; color: #374151;">{{ item.name }}</td>
+                    <td align="center" style="padding: 8px; font-size: 13px; color: #374151;">{{ item.quantity }}</td>
+                    <td align="right" style="padding: 8px; font-size: 13px; color: #374151;">₹{{ item.price }}</td>
+                    <td align="right" style="padding: 8px; font-size: 13px; color: #374151; font-weight: bold;">₹{{ item.total }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+
+              <!-- Shipping Address -->
+              <h3 style="font-size: 14px; color: #1f2937; margin-bottom: 10px; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px;">Shipping Address</h3>
+              <p style="font-size: 13px; color: #4b5563; line-height: 1.5; margin: 0; background-color: #f9fafb; padding: 12px; border-radius: 6px;">
+                <strong>{{ order.shipping_full_name }}</strong><br>
+                {{ order.shipping_address_line_1 }}<br>
+                {% if order.shipping_address_line_2 %}{{ order.shipping_address_line_2 }}<br>{% endif %}
+                {% if order.shipping_landmark %}{{ order.shipping_landmark }}<br>{% endif %}
+                {{ order.shipping_city }}, {{ order.shipping_state }} - {{ order.shipping_postal_code }}<br>
+                {{ order.shipping_country }}<br>
+                Phone: {{ order.shipping_phone }}
+              </p>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 20px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 12px; color: #9ca3af;">
+              <p style="margin: 0; margin-bottom: 4px;">ShoppingBuddy Inc. | Support: support@shoppingbuddy.com</p>
+              <p style="margin: 0;">This is a system generated notification. Please do not reply directly.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
