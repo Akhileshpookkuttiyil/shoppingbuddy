@@ -520,3 +520,93 @@ class RazorpayCheckoutIntegrationTest(TestCase):
         self.client.login(username=self.username, password=self.password)
         response = self.client.get(f'/payments/payment/{order.id}/')
         self.assertEqual(response.status_code, 400)
+
+
+class RazorpayCheckoutExperienceTest(TestCase):
+    def setUp(self):
+        self.username = 'testcustomer_exp'
+        self.password = 'securepassword123'
+        self.user = User.objects.create_user(username=self.username, password=self.password, email='cust_exp@example.com')
+        self.other_user = User.objects.create_user(username='otheruser_exp', password=self.password)
+        
+        self.addr = UserAddress.objects.create(
+            user=self.user, full_name='Jane Doe', phone='9876543210', address_line_1='Flat 101', city='Mumbai', postal_code='400001', is_active=True
+        )
+        
+        self.order = Order.objects.create(
+            user=self.user,
+            order_number='SB-EXP-001',
+            payment_method='RAZORPAY',
+            status='PENDING_PAYMENT',
+            payment_status='PENDING',
+            total_amount=500.00,
+            razorpay_order_id='order_rz_exp_123',
+            shipping_full_name='Jane Doe',
+            shipping_phone='9876543210'
+        )
+
+    def test_payment_page_renders_and_contains_config(self):
+        """Verify the payment page renders successfully and context data is injected correctly."""
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.get(f'/payments/payment/{self.order.id}/')
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'payment.html')
+        
+        # Verify context data
+        self.assertEqual(response.context['order'], self.order)
+        self.assertEqual(response.context['razorpay_key_id'], 'test_key_id')
+        self.assertEqual(response.context['amount_in_paise'], 50000)
+        
+        # Verify rendered text injections
+        self.assertContains(response, 'SB-EXP-001')
+        self.assertContains(response, 'Jane Doe')
+        self.assertContains(response, 'cust_exp@example.com')
+        self.assertContains(response, '9876543210')
+        self.assertContains(response, '50000') # amount in paise in js options
+        self.assertContains(response, 'test_key_id') # key id in js options
+        self.assertContains(response, 'order_rz_exp_123') # razorpay order id in js options
+
+    def test_payment_page_unauthorized_user_denied(self):
+        """Verify another user cannot access the payment page (returns 404)."""
+        self.client.login(username='otheruser_exp', password=self.password)
+        response = self.client.get(f'/payments/payment/{self.order.id}/')
+        self.assertEqual(response.status_code, 404)
+
+    def test_payment_page_expired_order_denied(self):
+        """Verify expired orders return 400."""
+        self.order.status = 'PAYMENT_EXPIRED'
+        self.order.save()
+        
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.get(f'/payments/payment/{self.order.id}/')
+        self.assertEqual(response.status_code, 400)
+
+    def test_payment_page_cancelled_order_denied(self):
+        """Verify cancelled orders return 400."""
+        self.order.status = 'CANCELLED'
+        self.order.save()
+        
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.get(f'/payments/payment/{self.order.id}/')
+        self.assertEqual(response.status_code, 400)
+
+    def test_payment_page_refunded_order_denied(self):
+        """Verify refunded orders return 400."""
+        self.order.status = 'REFUNDED'
+        self.order.payment_status = 'REFUNDED'
+        self.order.save()
+        
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.get(f'/payments/payment/{self.order.id}/')
+        self.assertEqual(response.status_code, 400)
+
+    def test_payment_page_paid_order_denied(self):
+        """Verify paid orders return 400."""
+        self.order.status = 'PROCESSING'
+        self.order.payment_status = 'PAID'
+        self.order.save()
+        
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.get(f'/payments/payment/{self.order.id}/')
+        self.assertEqual(response.status_code, 400)
