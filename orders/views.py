@@ -91,6 +91,18 @@ def my_orders(request):
     return render(request, 'account/orders.html', {'orders': orders})
 
 @login_required
+def customer_order_detail(request, order_id):
+    order = get_object_or_404(
+        Order.objects.select_related('user').prefetch_related('items__product'),
+        pk=order_id,
+        user=request.user
+    )
+    return render(request, 'account/order_detail.html', {
+        'order': order,
+        'order_items': order.items.all(),
+    })
+
+@login_required
 def order_detail(request, order_id):
     order = get_object_or_404(
         Order.objects.prefetch_related('items__product'),

@@ -346,6 +346,52 @@ class OrderHistoryAndDetailTest(TestCase):
         self.assertContains(response, 'Flat 12')
         self.assertContains(response, 'Mumbai')
 
+    def test_order_detail_explicit_context(self):
+        """Verify that context includes 'order' and 'order_items' explicitly."""
+        self.client.login(username=self.username1, password=self.password)
+        response = self.client.get(f'/account/orders/{self.order1.id}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('order', response.context)
+        self.assertIn('order_items', response.context)
+        self.assertEqual(response.context['order'], self.order1)
+        self.assertEqual(list(response.context['order_items']), list(self.order1.items.all()))
+
+    def test_order_detail_query_optimization(self):
+        """Verify that customer order detail page utilizes query optimization to prevent N+1 queries."""
+        self.client.login(username=self.username1, password=self.password)
+        
+        # Create a few more items on this order to check for N+1 query loops
+        product2 = Product.objects.create(
+            name='Test Product 2', slug='test-product-2', price=200.00, stock=5, in_stock=True, category=self.category
+        )
+        OrderItem.objects.create(order=self.order1, product=product2, price=200.00, quantity=2)
+        
+        from django.db import connection
+        
+        # Clear database queries log
+        connection.queries_log.clear()
+        
+        # Fetch detail page
+        response = self.client.get(f'/account/orders/{self.order1.id}/')
+        self.assertEqual(response.status_code, 200)
+        
+        # Capture the query count before accessing relationships
+        num_queries_before = len(connection.queries)
+        
+        # Access relationship attributes on the context variables
+        order = response.context['order']
+        order_items = response.context['order_items']
+        
+        # Accessing order.user, items, and items' products should not hit the database
+        user_email = order.user.email
+        for item in order_items:
+            product_name = item.product.name
+            
+        num_queries_after = len(connection.queries)
+        
+        # Assert no extra database calls are made
+        self.assertEqual(num_queries_after - num_queries_before, 0)
+
     def test_order_list_pagination_and_page_2(self):
         """Verify that order list paginates 10 orders per page and page 2 returns the rest."""
         self.client.login(username=self.username1, password=self.password)
