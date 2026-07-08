@@ -75,6 +75,7 @@ def payment_cancel(request, order_id):
         services.handle_payment_failure(order)
     return redirect('order_confirmation', order_id=order.id)
 
+@require_POST
 @login_required
 def payment_retry(request, order_id):
     """
@@ -82,15 +83,28 @@ def payment_retry(request, order_id):
     """
     order = get_object_or_404(Order, pk=order_id, user=request.user)
     
+    # Reject retry for invalid statuses
+    if order.status in ['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED', 'PAYMENT_EXPIRED'] or order.payment_status == 'PAID':
+        return HttpResponseBadRequest("Retries are not allowed for this order status.")
+
     if order.status != 'PAYMENT_FAILED' and order.payment_status != 'FAILED':
-        return redirect('order_confirmation', order_id=order.id)
+        return HttpResponseBadRequest("Only failed payments can be retried.")
 
     try:
         rz_order = services.create_razorpay_order(order)
         order.razorpay_order_id = rz_order['id']
         order.status = 'PENDING_PAYMENT'
         order.payment_status = 'PENDING'
-        order.save(update_fields=['razorpay_order_id', 'status', 'payment_status'])
+        
+        # Clear previous payment verification details
+        order.razorpay_payment_id = None
+        order.razorpay_signature = None
+        order.paid_at = None
+        
+        order.save(update_fields=[
+            'razorpay_order_id', 'status', 'payment_status',
+            'razorpay_payment_id', 'razorpay_signature', 'paid_at'
+        ])
     except Exception as e:
         return HttpResponseBadRequest(f"Failed to retry payment: {str(e)}")
 

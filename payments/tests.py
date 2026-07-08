@@ -319,7 +319,7 @@ class RazorpayPaymentIntegrationTest(TestCase):
         self.order.save()
 
         self.client.login(username='testcustomer', password=self.password)
-        response = self.client.get(f'/payments/retry/{self.order.id}/')
+        response = self.client.post(f'/payments/retry/{self.order.id}/')
         
         self.assertRedirects(response, f'/payments/payment/{self.order.id}/')
 
@@ -340,7 +340,7 @@ class RazorpayPaymentIntegrationTest(TestCase):
         old_order_number = self.order.order_number
 
         self.client.login(username='testcustomer', password=self.password)
-        self.client.get(f'/payments/retry/{self.order.id}/')
+        self.client.post(f'/payments/retry/{self.order.id}/')
 
         self.order.refresh_from_db()
         self.assertEqual(self.order.id, old_order_id)
@@ -1037,3 +1037,125 @@ class RazorpayWebhookVerificationTest(TestCase):
             HTTP_X_RAZORPAY_SIGNATURE='valid_signature'
         )
         self.assertEqual(response.status_code, 404)
+
+
+class RazorpayPaymentRetryFlowTest(TestCase):
+    def setUp(self):
+        self.username = 'testcustomer_retry'
+        self.password = 'securepassword123'
+        self.user = User.objects.create_user(username=self.username, password=self.password, email='cust_retry@example.com')
+        self.other_user = User.objects.create_user(username='otheruser_retry', password=self.password)
+        
+        self.category = Category.objects.create(name='Electronics', slug='electronics')
+        self.product = Product.objects.create(
+            name='Smartphone', slug='smartphone', price=500.00, stock=10, in_stock=True, category=self.category
+        )
+        
+        # Create a failed order
+        self.order = Order.objects.create(
+            user=self.user,
+            order_number='SB-RETRY-001',
+            payment_method='RAZORPAY',
+            status='PAYMENT_FAILED',
+            payment_status='FAILED',
+            total_amount=500.00,
+            razorpay_order_id='old_order_rz_123',
+            razorpay_payment_id='old_pay_123',
+            razorpay_signature='old_sig_123',
+            paid_at=timezone.now(),
+            expires_at=timezone.now() + timedelta(minutes=20)
+        )
+        self.order_item = OrderItem.objects.create(order=self.order, product=self.product, price=500.00, quantity=1)
+        # Mock initial stock decrement
+        self.product.stock -= 1
+        self.product.save()
+
+    @patch('payments.services.client')
+    def test_successful_retry_flow(self, mock_client):
+        """Verify successful payment retry resets fields, retains same order details, and redirects."""
+        mock_client.order.create.return_value = {'id': 'new_order_rz_777'}
+        self.client.login(username=self.username, password=self.password)
+        
+        # Check stock before
+        self.assertEqual(self.product.stock, 9)
+        
+        response = self.client.post(f'/payments/retry/{self.order.id}/')
+        
+        # Assert redirect to payment page
+        self.assertRedirects(response, f'/payments/payment/{self.order.id}/')
+        
+        # Assert order fields reset/updates
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.razorpay_order_id, 'new_order_rz_777')
+        self.assertEqual(self.order.status, 'PENDING_PAYMENT')
+        self.assertEqual(self.order.payment_status, 'PENDING')
+        self.assertIsNone(self.order.razorpay_payment_id)
+        self.assertIsNone(self.order.razorpay_signature)
+        self.assertIsNone(self.order.paid_at)
+        
+        # Assert order and items are reused
+        self.assertEqual(Order.objects.count(), 1)
+        self.assertEqual(OrderItem.objects.count(), 1)
+        self.assertEqual(self.order_item.order, self.order)
+        
+        # Assert stock is unchanged
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock, 9)
+
+    def test_payment_retry_unauthorized_user(self):
+        """Verify another user cannot retry the order (returns 404)."""
+        self.client.login(username='otheruser_retry', password=self.password)
+        response = self.client.post(f'/payments/retry/{self.order.id}/')
+        self.assertEqual(response.status_code, 404)
+
+    def test_payment_retry_already_paid_blocked(self):
+        """Verify retrying paid orders is blocked."""
+        self.order.status = 'PROCESSING'
+        self.order.payment_status = 'PAID'
+        self.order.save()
+        
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.post(f'/payments/retry/{self.order.id}/')
+        self.assertEqual(response.status_code, 400)
+
+    def test_payment_retry_cancelled_blocked(self):
+        """Verify retrying cancelled orders is blocked."""
+        self.order.status = 'CANCELLED'
+        self.order.save()
+        
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.post(f'/payments/retry/{self.order.id}/')
+        self.assertEqual(response.status_code, 400)
+
+    def test_payment_retry_expired_blocked(self):
+        """Verify retrying expired orders is blocked."""
+        self.order.status = 'PAYMENT_EXPIRED'
+        self.order.save()
+        
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.post(f'/payments/retry/{self.order.id}/')
+        self.assertEqual(response.status_code, 400)
+
+    def test_payment_retry_refunded_blocked(self):
+        """Verify retrying refunded orders is blocked."""
+        self.order.status = 'REFUNDED'
+        self.order.payment_status = 'REFUNDED'
+        self.order.save()
+        
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.post(f'/payments/retry/{self.order.id}/')
+        self.assertEqual(response.status_code, 400)
+
+    @patch('payments.services.client')
+    def test_payment_retry_duplicate_requests(self, mock_client):
+        """Verify duplicate retry requests resolve correctly without errors."""
+        mock_client.order.create.return_value = {'id': 'new_order_rz_777'}
+        self.client.login(username=self.username, password=self.password)
+        
+        # First retry request
+        res1 = self.client.post(f'/payments/retry/{self.order.id}/')
+        self.assertRedirects(res1, f'/payments/payment/{self.order.id}/')
+        
+        # Second retry request (now status is PENDING_PAYMENT, which should fail retry validation)
+        res2 = self.client.post(f'/payments/retry/{self.order.id}/')
+        self.assertEqual(res2.status_code, 400)
