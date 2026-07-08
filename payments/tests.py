@@ -2,13 +2,113 @@ import json
 from io import StringIO
 from datetime import timedelta
 from unittest.mock import patch, MagicMock
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.core.management import call_command
 from orders.models import Order, OrderItem
 from shop.models import Product, Category
 from accounts.models import UserAddress
+
+class RazorpayFoundationTest(TestCase):
+    def test_service_import_integrity(self):
+        """Verify that all services functions can be imported successfully."""
+        try:
+            from payments.services import (
+                get_razorpay_client,
+                create_razorpay_order,
+                verify_razorpay_signature,
+                handle_payment_success,
+                handle_payment_failure
+            )
+        except ImportError as e:
+            self.fail(f"Services import integrity failed: {str(e)}")
+
+    def test_successful_client_initialization(self):
+        """Verify get_razorpay_client returns a valid Razorpay Client instance when all credentials are set."""
+        from payments.services import get_razorpay_client
+        import razorpay
+        client_inst = get_razorpay_client()
+        self.assertIsInstance(client_inst, razorpay.Client)
+
+    @override_settings(RAZORPAY_KEY_ID=None, RAZORPAY_KEY_SECRET='secret', RAZORPAY_WEBHOOK_SECRET='webhook')
+    def test_client_initialization_missing_key_id(self):
+        """Verify ValidationError is raised when RAZORPAY_KEY_ID is missing."""
+        from payments.services import get_razorpay_client
+        from django.core.exceptions import ValidationError
+        with self.assertRaises(ValidationError) as ctx:
+            get_razorpay_client()
+        self.assertIn("RAZORPAY_KEY_ID is missing", str(ctx.exception))
+
+    @override_settings(RAZORPAY_KEY_ID='key', RAZORPAY_KEY_SECRET=None, RAZORPAY_WEBHOOK_SECRET='webhook')
+    def test_client_initialization_missing_secret(self):
+        """Verify ValidationError is raised when RAZORPAY_KEY_SECRET is missing."""
+        from payments.services import get_razorpay_client
+        from django.core.exceptions import ValidationError
+        with self.assertRaises(ValidationError) as ctx:
+            get_razorpay_client()
+        self.assertIn("RAZORPAY_KEY_SECRET is missing", str(ctx.exception))
+
+    @override_settings(RAZORPAY_KEY_ID='key', RAZORPAY_KEY_SECRET='secret', RAZORPAY_WEBHOOK_SECRET=None)
+    def test_client_initialization_missing_webhook_secret(self):
+        """Verify ValidationError is raised when RAZORPAY_WEBHOOK_SECRET is missing."""
+        from payments.services import get_razorpay_client
+        from django.core.exceptions import ValidationError
+        with self.assertRaises(ValidationError) as ctx:
+            get_razorpay_client()
+        self.assertIn("RAZORPAY_WEBHOOK_SECRET is missing", str(ctx.exception))
+
+    @override_settings(RAZORPAY_KEY_ID=None, RAZORPAY_KEY_SECRET=None, RAZORPAY_WEBHOOK_SECRET=None)
+    def test_client_initialization_all_missing(self):
+        """Verify ValidationError is raised when all credentials are missing."""
+        from payments.services import get_razorpay_client
+        from django.core.exceptions import ValidationError
+        with self.assertRaises(ValidationError) as ctx:
+            get_razorpay_client()
+        self.assertIn("RAZORPAY_KEY_ID is missing", str(ctx.exception))
+
+    def test_order_model_razorpay_fields_and_indexes(self):
+        """Verify that Order model has the required Razorpay fields and indexes."""
+        from orders.models import Order
+        fields = [f.name for f in Order._meta.get_fields()]
+        self.assertIn('razorpay_order_id', fields)
+        self.assertIn('razorpay_payment_id', fields)
+        self.assertIn('razorpay_signature', fields)
+        self.assertIn('paid_at', fields)
+        self.assertIn('status', fields)
+        self.assertIn('payment_status', fields)
+
+        # Verify database indexing is enabled where appropriate
+        self.assertTrue(Order._meta.get_field('razorpay_order_id').db_index)
+        self.assertTrue(Order._meta.get_field('status').db_index)
+        self.assertTrue(Order._meta.get_field('payment_status').db_index)
+
+    def test_migration_integrity(self):
+        """Verify there are no pending database migration changes."""
+        from django.core.management import call_command
+        out = StringIO()
+        try:
+            call_command('makemigrations', check=True, dry_run=True, stdout=out)
+        except SystemExit as e:
+            if getattr(e, 'code', 0) != 0:
+                self.fail(f"Pending migrations detected:\n{out.getvalue()}")
+        except Exception as e:
+            self.fail(f"makemigrations check failed: {str(e)}")
+
+    @patch('payments.services.client')
+    def test_mocked_verify_razorpay_signature(self, mock_client):
+        """Verify verify_razorpay_signature returns True on valid signature validation."""
+        mock_client.utility.verify_payment_signature.return_value = True
+        from payments.services import verify_razorpay_signature
+        data = {
+            'razorpay_order_id': 'order_id',
+            'razorpay_payment_id': 'pay_id',
+            'razorpay_signature': 'sig'
+        }
+        res = verify_razorpay_signature(data)
+        self.assertTrue(res)
+        mock_client.utility.verify_payment_signature.assert_called_once_with(data)
+
 
 class RazorpayPaymentIntegrationTest(TestCase):
     def setUp(self):
